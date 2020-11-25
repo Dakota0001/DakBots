@@ -1,4 +1,4 @@
-local Start = Vector(3270.075684, -949.181458, -3496.085449)--Vector( 8662.101563, 2229.285156, 162.809479 )
+local Start = Vector( 8137.153809, -8173.738770, -2931.020752 )--Vector( 8662.101563, 2229.285156, 162.809479 )
 local End = Vector( -3228.089111, -580.685852, -3430.656738 )
 
 local Radius = 25
@@ -38,7 +38,7 @@ while HitGoal == false and runs < 10000 do
 			Dir = (End-CurNode):GetNormalized()*Vector(1,1,0)
 			BaseNode = CurNode
 			NodeList[#NodeList+1] = BaseNode
-			debugoverlay.Cross( BaseNode, 100, 10, Color( 100, 100, 255 ), true )
+			debugoverlay.Cross( BaseNode, 100, 10, Color( 0, 0, 255 ), true )
 			Offset = 0
 		end
 		CurNode = BaseNode
@@ -71,7 +71,7 @@ while HitGoal == false and runs < 10000 do
 				BaseNode = CurNode
 				debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, Color( 100, 100, 255 ), true)
 				NodeList[#NodeList+1] = BaseNode
-				debugoverlay.Cross( BaseNode, 100, 10, Color( 100, 100, 255 ), true )
+				debugoverlay.Cross( BaseNode, 100, 10, Color( 0, 0, 255 ), true )
 				Offset = 0
 			end
 			if CheckDown.HitPos:Distance(Check.HitPos)>MaxStepHeight*2 then
@@ -88,7 +88,7 @@ while HitGoal == false and runs < 10000 do
 			if PathNodes > LastPathNodes and Offset > 0 then
 				Dir = (End-CurNode):GetNormalized()*Vector(1,1,0)
 				BaseNode = CurNode
-				debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, Color( 100, 100, 255 ), true)
+				debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, Color( 255, 255, 255 ), true)
 				NodeList[#NodeList+1] = BaseNode
 				debugoverlay.Cross( BaseNode, 100, 10, Color( 0, 0, 255 ), true )
 				Offset = 0
