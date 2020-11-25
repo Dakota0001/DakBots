@@ -1,4 +1,5 @@
-local Start, End
+DakPath = DakPath or {}
+
 local StartColor = Color(0, 255, 0)
 local EndColor   = Color(255, 0, 0)
 local LineColor  = Color(255, 255, 255)
@@ -15,30 +16,30 @@ local MinimumPath   = 30
 local MaxIterations = 30000
 
 concommand.Add("path_start", function(Player)
-	Start = Player:GetEyeTrace().HitPos
+	DakPath.Start = Player:GetEyeTrace().HitPos
 
-	Player:ChatPrint("Path start has been setup as " .. tostring(Start))
+	Player:ChatPrint("Path start has been setup as " .. tostring(DakPath.Start))
 end)
 
 concommand.Add("path_end", function(Player)
-	End = Player:GetEyeTrace().HitPos
+	DakPath.End = Player:GetEyeTrace().HitPos
 
-	Player:ChatPrint("Path end has been setup as " .. tostring(End))
+	Player:ChatPrint("Path end has been setup as " .. tostring(DakPath.End))
 end)
 
 concommand.Add("path_run", function()
-	if not Start then return print("No starting point has been setup with path_start") end
-	if not End then return print("No ending point has been setup with path_end") end
+	if not DakPath.Start then return print("No starting point has been setup with path_start") end
+	if not DakPath.End then return print("No ending point has been setup with path_end") end
 
-	debugoverlay.Cross(Start, 100, Duration, StartColor, true)
-	debugoverlay.Cross(End, 100, Duration, EndColor, true)
+	debugoverlay.Cross(DakPath.Start, 100, Duration, StartColor, true)
+	debugoverlay.Cross(DakPath.End, 100, Duration, EndColor, true)
 
-	local BaseNode      = Start
-	local CurNode       = Start
+	local BaseNode      = DakPath.Start
+	local CurNode       = DakPath.Start
 	local PathNodes     = 0
 	local LastPathNodes = MinimumPath
 	local Offset        = 0
-	local Dir           = (End - CurNode):GetNormalized() * Normal
+	local Dir           = (DakPath.End - CurNode):GetNormalized() * Normal
 	local HitGoal       = false
 	local NodeList      = {BaseNode}
 	local Iterations    = 0
@@ -61,10 +62,10 @@ concommand.Add("path_run", function()
 			print("World hit, ", PathNodes, LastPathNodes)
 			--debugoverlay.Cross( Check.HitPos, 40, 10, Color( 255, 100, 100 ), true )
 			Offset = Offset + OffsetAng
-			Dir = ((End-CurNode):GetNormalized():Angle() + Angle(0,Offset,0)):Forward() * Normal
+			Dir = ((DakPath.End-CurNode):GetNormalized():Angle() + Angle(0,Offset,0)):Forward() * Normal
 
 			if PathNodes > LastPathNodes then
-				Dir = (End-CurNode):GetNormalized() * Normal
+				Dir = (DakPath.End-CurNode):GetNormalized() * Normal
 				BaseNode = CurNode
 				NodeList[#NodeList + 1] = BaseNode
 				debugoverlay.Cross( BaseNode, 100, 10, NodeColor, true )
@@ -96,9 +97,9 @@ concommand.Add("path_run", function()
 			if CheckDown.HitPos:Distance(Check.HitPos) < MaxHeight or CheckDown.HitPos:Distance(Check.HitPos) > MaxHeight * 2 or (Checkwater.Hit and Checkwater.HitPos.z > CheckDown.HitPos.z) then
 				--debugoverlay.Cross( Check.HitPos, 40, 10, Color( 255, 100, 100 ), true )
 				Offset = Offset + OffsetAng
-				Dir = ((End-CurNode):GetNormalized():Angle() + Angle(0,Offset,0)):Forward() * Normal
+				Dir = ((DakPath.End-CurNode):GetNormalized():Angle() + Angle(0,Offset,0)):Forward() * Normal
 				if PathNodes > LastPathNodes then
-					Dir = (End-CurNode):GetNormalized() * Normal
+					Dir = (DakPath.End-CurNode):GetNormalized() * Normal
 					BaseNode = CurNode
 					debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, LineColor, true)
 					NodeList[#NodeList + 1] = BaseNode
@@ -121,7 +122,7 @@ concommand.Add("path_run", function()
 				debugoverlay.Cross( CurNode, 10, 10, PathColor, true )
 				PathNodes = PathNodes + 1
 				if PathNodes > LastPathNodes and Offset > 0 then
-					Dir = (End-CurNode):GetNormalized() * Normal
+					Dir = (DakPath.End-CurNode):GetNormalized() * Normal
 					BaseNode = CurNode
 					debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, LineColor, true)
 					NodeList[#NodeList + 1] = BaseNode
@@ -131,7 +132,7 @@ concommand.Add("path_run", function()
 				end
 			end
 		end
-		if CurNode:Distance(End) <= 100 then
+		if CurNode:Distance(DakPath.End) <= 100 then
 			BaseNode = CurNode
 			debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, LineColor, true)
 			NodeList[#NodeList + 1] = BaseNode
