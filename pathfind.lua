@@ -1,11 +1,11 @@
-local Start = Vector( 8137.153809, -8173.738770, -2931.020752 )--Vector( 8662.101563, 2229.285156, 162.809479 )
+local Start = Vector( 7231.784180, -10556.130859, -2948.645996 )--Vector( 8662.101563, 2229.285156, 162.809479 )
 local End = Vector( -3228.089111, -580.685852, -3430.656738 )
 
 local Radius = 25
 local StepSize = 50
 local MaxStepHeight = 50
 local OffsetAng = 10
-local MinimumPath = 25
+local MinimumPath = 30
 
 local BaseNode = Start
 local CurNode = Start
@@ -63,7 +63,7 @@ while HitGoal == false and runs < 10000 do
 			watertrace.maxs = Vector(1,1,1)
 			watertrace.mask = MASK_WATER
 		local Checkwater = util.TraceHull( watertrace )
-		if CheckDown.HitPos:Distance(Check.HitPos)<=MaxStepHeight or CheckDown.HitPos:Distance(Check.HitPos)>MaxStepHeight*2 or Checkwater.Hit then
+		if CheckDown.HitPos:Distance(Check.HitPos)<=MaxStepHeight or CheckDown.HitPos:Distance(Check.HitPos)>MaxStepHeight*2 or (Checkwater.Hit and Checkwater.HitPos.z>CheckDown.HitPos.z) then
 			--debugoverlay.Cross( Check.HitPos, 40, 10, Color( 255, 100, 100 ), true )
 			Offset = Offset + OffsetAng
 			Dir = ((End-CurNode):GetNormalized():Angle()+Angle(0,Offset,0)):Forward()*Vector(1,1,0)
@@ -76,7 +76,11 @@ while HitGoal == false and runs < 10000 do
 				Offset = 0
 			end
 			if CheckDown.HitPos:Distance(Check.HitPos)>MaxStepHeight*2 then
-				CurNode = Vector(BaseNode.x,BaseNode.y,CheckDown.HitPos.z+20)
+				if CheckDown.HitPos:Distance(Check.HitPos)>MaxStepHeight*3 then
+					CurNode = BaseNode
+				else
+					CurNode = Vector(BaseNode.x,BaseNode.y,CheckDown.HitPos.z+20)
+				end
 			else
 				CurNode = BaseNode
 			end
