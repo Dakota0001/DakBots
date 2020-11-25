@@ -5,7 +5,7 @@ local Radius = 25
 local StepSize = 50
 local MaxStepHeight = 50
 local OffsetAng = 10
-local MinimumPath = 5
+local MinimumPath = 25
 
 local BaseNode = Start
 local CurNode = Start
@@ -93,6 +93,7 @@ while HitGoal == false and runs < 10000 do
 				NodeList[#NodeList+1] = BaseNode
 				debugoverlay.Cross( BaseNode, 100, 10, Color( 0, 0, 255 ), true )
 				Offset = 0
+				PathNodes = 0
 			end
 		end
 	end
