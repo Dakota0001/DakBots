@@ -19,9 +19,10 @@ local OffsetAng     = 10
 local Normal        = Vector(1, 1, 0)
 local MinimumPath   = 30
 local MaxIterations = 50000
-local GridSize      = 150
-local GridCube      = Vector(GridSize, GridSize, GridSize) * 0.495 -- Leaving a small gap between each of them
-local HalfHeight    = Vector(0, 0, GridSize * 0.5)
+local GridSize      = 75
+local GridHeight    = 25
+local GridCube      = Vector(GridSize, GridSize, GridHeight) * 0.495 -- Leaving a small gap between each of them
+local HalfHeight    = Vector(0, 0, GridHeight * 0.5)
 local VectorFormat  = "[%s, %s, %s]"
 
 local CheckNode = {}
@@ -30,57 +31,128 @@ local WaterTrace = { start = true, endpos = true, mins = Vector(), maxs = Vector
 local NodeTrace = { start = true, endpos = true, mins = Vector(-Radius, -Radius, -5), maxs = Vector(Radius, Radius, 20), mask = MASK_SOLID_BRUSHONLY, output = CheckNode }
 
 local function GetCoordinate(Position)
-	return math.Round(Position.x / GridSize), math.Round(Position.y / GridSize), math.Round(Position.z / GridSize)
+	return math.Round(Position.x / GridSize), math.Round(Position.y / GridSize), math.Round(Position.z / GridHeight)
+end
+
+local function IsValidNode(CheckDown, CheckWater)
+	if not CheckDown.Hit then return false end
+	if CheckDown.StartSolid then return false end
+	if CheckDown.HitTexture == "**empty**" then return false end
+	if CheckWater.Hit then return false end
+
+	return true
 end
 
 local function AddNode(Position)
 	local X, Y, Z = GetCoordinate(Position)
-	local Key = VectorFormat:format(X, Y, Z)
+	local Key  = VectorFormat:format(X, Y, Z)
+	local Node = Nodes[Key]
 
-	if not Nodes[Key] then
-		local Center = Vector(X, Y, Z) * GridSize
+	if not Node or Unused[Key] then
+		local Coordinate = Vector(X, Y, Z)
+		local Center     = Vector(X * GridSize, Y * GridSize, Z * GridHeight)
+		local Top, Bottom = Center + HalfHeight, Center - HalfHeight
 
-		DownTrace.start = Center + HalfHeight
-		DownTrace.endpos = Center - HalfHeight
+		DownTrace.start  = Top
+		DownTrace.endpos = Bottomw
 
 		local CheckDown = util.TraceHull(DownTrace)
 
-		if not CheckDown.Hit then
-			Unused[Key] = {
-				Center = Center
-			}
+		WaterTrace.start = Top
+		WaterTrace.endpos = Bottom
 
+		local CheckWater = util.TraceHull(WaterTrace)
+
+		if not IsValidNode(CheckDown, CheckWater) then
+			Unused[Key] = { Center = Center }
 			return
 		end
 
-		Nodes[Key] = {
-			Center = Center,
-			Floor = CheckDown.HitPos,
+		Node = {
+			Coordinate = Coordinate,
+			Center     = Center,
+			Floor      = CheckDown.HitPos,
+			Sides      = {},
 		}
+
+		Nodes[Key] = Node
 	end
+
+	return Node
 end
 
 local function DrawNodes()
-	local Ang = Angle()
+	local Position = LocalPlayer():GetEyeTrace().HitPos
+	local Center   = Vector(GetCoordinate(Position))
+	local Offset   = Vector()
+	local NoAngle  = Angle()
 
-	for _, Data in pairs(Nodes) do
-		render.DrawWireframeBox(Data.Center, Ang, -GridCube, GridCube, GridColor, true)
-		render.DrawWireframeSphere(Data.Floor, 10, 10, 10, StartColor, true)
-	end
+	for X = Center.x - 10, Center.x + 10 do
+		for Y = Center.y - 10, Center.y + 10 do
+			for Z = Center.z - 10, Center.z + 10 do
+				Offset.x = X
+				Offset.y = Y
+				Offset.z = Z
 
-	for _, Data in pairs(Unused) do
-		render.DrawWireframeBox(Data.Center, Ang, -GridCube, GridCube, EndColor, true)
+				local Key = VectorFormat:format(X, Y, Z)
+				local Node = Nodes[Key]
+
+				if Node then
+					render.DrawWireframeBox(Node.Center, NoAngle, -GridCube, GridCube, GridColor, true)
+					render.DrawWireframeSphere(Node.Floor, 10, 10, 10, StartColor, true)
+				end
+
+			end
+		end
 	end
 end
 
-concommand.Add("path_grid_display", function()
-	hook.Add("PostDrawOpaqueRenderables", "Path Grid Display", DrawNodes)
+local function GetNeighbours(Node, Checked)
+	local Start  = Vector(Node.Center:Unpack())
+	local Sides  = Node.Sides
+	local Offset = Vector()
+	local Found  = {}
 
-	timer.Simple(Duration, function()
-		hook.Remove("PostDrawOpaqueRenderables", "Path Grid Display")
-	end)
+	for X = -1, 1 do
+		for Y = -1, 1 do
+			for Z = -1, 1 do
+				Offset.x = X * GridSize
+				Offset.y = Y * GridSize
+				Offset.z = Z * GridHeight
+
+				local Position = Start + Offset
+				local Current  = AddNode(Position)
+
+				if not Current then continue end
+
+				local Key = VectorFormat:format(Current.Coordinate:Unpack())
+
+				if Checked[Key] then continue end
+				if not Sides[Current] then
+					Sides[Current] = {
+						Distance = Start:DistToSqr(Position),
+					}
+				end
+
+				Found[Key] = Current
+			end
+		end
+	end
+
+	return Found
+end
+
+-- Activates the node debug view
+concommand.Add("path_grid_show", function()
+	hook.Add("PostDrawOpaqueRenderables", "Path Grid Display", DrawNodes)
 end)
 
+-- Deactivates the node debug view
+concommand.Add("path_grid_hide", function()
+	hook.Remove("PostDrawOpaqueRenderables", "Path Grid Display")
+end)
+
+-- Clears nodes and unused nodes from memory
 concommand.Add("path_grid_clear", function()
 	for Node in pairs(Nodes) do
 		Nodes[Node] = nil
@@ -93,20 +165,21 @@ concommand.Add("path_grid_clear", function()
 	hook.Remove("PostDrawOpaqueRenderables", "Path Grid Display")
 end)
 
+-- Sets the start position for the pathfinder
 concommand.Add("path_start", function(Player)
 	DakPath.Start = Player:GetEyeTrace().HitPos
 
 	Player:ChatPrint("Path start has been setup as " .. tostring(DakPath.Start))
 end)
 
+-- Sets the end position for the pathfinder
 concommand.Add("path_end", function(Player)
 	DakPath.End = Player:GetEyeTrace().HitPos
 
 	Player:ChatPrint("Path end has been setup as " .. tostring(DakPath.End))
 end)
 
-
-
+-- Runs the test pathfinder
 concommand.Add("path_run", function()
 	if not DakPath.Start then return print("No starting point has been setup with path_start") end
 	if not DakPath.End then return print("No ending point has been setup with path_end") end
@@ -248,83 +321,41 @@ concommand.Add("path_run", function()
 	print("Time: " .. SysTime() - DebugStart)
 end)
 
-concommand.Add("path_create_node_grid", function()
+-- Generates a set of walkable nodes with the start position as origin
+concommand.Add("path_generate", function()
 	if not DakPath.Start then return print("No starting point has been setup with path_start") end
-	if not DakPath.End then return print("No ending point has been setup with path_end") end
 
-	local Start = DakPath.Start
-	local End   = DakPath.End
+	local StartPos   = DakPath.Start
+	local Checked    = {}
+	local Pending    = { AddNode(StartPos) }
+	local Count      = #Pending -- Could be one or zero
+	local Total      = Count
+	local Iterations = 0
+	local Start      = SysTime()
 
-	debugoverlay.Cross(Start, 100, Duration, StartColor, true)
-	debugoverlay.Cross(End, 100, Duration, EndColor, true)
+	while Count > 0 do
+		Iterations = Iterations + 1
+		Count = 0
 
-	--note, get a Z position that is comfortably inside the world, there's seemingly 0 standardization on those things
-	local ZPos = Start.z
-	local uptrace = util.TraceLine( {
-		start = Vector(0,0,ZPos),
-		endpos = Vector(0,0,ZPos)+Vector(0,0,1)*1000000,
-		mask = MASK_NPCWORLDSTATIC
-	} )
+		for Key, Current in pairs(Pending) do
+			Checked[Key] = true
+			Pending[Key] = nil
 
-	local startpos = Vector(0,0,uptrace.HitPos.z-25)
-	local righttrace = util.TraceLine( {
-		start = startpos,
-		endpos = startpos+Vector(0,1,0)*1000000,
-		mask = MASK_NPCWORLDSTATIC
-	} )
-	local lefttrace = util.TraceLine( {
-		start = startpos,
-		endpos = startpos-Vector(0,1,0)*1000000,
-		mask = MASK_NPCWORLDSTATIC
-	} )
-	local fronttrace = util.TraceLine( {
-		start = startpos,
-		endpos = startpos+Vector(1,0,0)*1000000,
-		mask = MASK_NPCWORLDSTATIC
-	} )
-	local backtrace = util.TraceLine( {
-		start = startpos,
-		endpos = startpos-Vector(1,0,0)*1000000,
-		mask = MASK_NPCWORLDSTATIC
-	} )
+			local Neighbours = GetNeighbours(Current, Checked)
 
-	local MapCenter = (righttrace.HitPos+lefttrace.HitPos+fronttrace.HitPos+backtrace.HitPos)*0.25
-	local NodeStart = Vector(fronttrace.HitPos.x,lefttrace.HitPos.y,uptrace.HitPos.z)
+			for New, Node in pairs(Neighbours) do
+				Pending[New] = Node
 
-	local StepSize = 50
-	local XDist = math.abs(fronttrace.HitPos.x)+math.abs(backtrace.HitPos.x)
-	local YDist = math.abs(lefttrace.HitPos.y)+math.abs(righttrace.HitPos.y)
-	local XNodes = XDist/StepSize
-	local YNodes = YDist/StepSize
-	local CurVector = Vector(0,0,0)
-	local Nodes = {}
-
-	for i=1, XNodes do
-		for j=1, YNodes do
-			CurVector = Vector(-StepSize*i,StepSize*j,0)
-			local downtrace = {}
-				downtrace.start = NodeStart + CurVector
-				downtrace.endpos = NodeStart + CurVector + Vector(0,0,-10000)
-				downtrace.filter = {}
-				downtrace.mins = Vector(0)
-				downtrace.maxs = Vector(0)
-				downtrace.mask = MASK_SOLID_BRUSHONLY
-			local CheckDown = util.TraceHull( downtrace )
-			local watertrace = {}
-				watertrace.start = NodeStart + CurVector
-				watertrace.endpos = NodeStart + CurVector + Vector(0,0,-10000)
-				watertrace.filter = {}
-				watertrace.mins = Vector(0)
-				watertrace.maxs = Vector(0)
-				watertrace.mask = MASK_WATER
-			local Checkwater = util.TraceHull( watertrace )
-			if not(Checkwater.Hit and Checkwater.HitPos.z>CheckDown.HitPos.z) then
-				Nodes[#Nodes+1] = CheckDown.HitPos
-				--debugoverlay.Cross( CheckDown.HitPos, 10, 10, Color( 255, 255, 255 ), true )
+				Count = Count + 1
+				Total = Total + 1
 			end
 		end
 	end
-	for i=1, #Nodes do
-		AddNode(Nodes[i])
-	end
+
+	local Finish = SysTime()
+
+	print("Finished propagation")
+	print("Iterations:", Iterations)
+	print("Duration:", Finish - Start)
+	print("Total Nodes:", Total)
 end)
