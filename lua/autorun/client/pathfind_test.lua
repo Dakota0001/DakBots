@@ -6,7 +6,9 @@ local EndColor   = Color(255, 0, 0)
 local LineColor  = Color(255, 255, 255)
 local NodeColor  = Color(255, 0, 255)
 local PathColor  = Color(0, 0, 255)
+local GridColor  = Color(255, 255, 0)
 
+local Nodes         = DakPath.Nodes
 local Duration      = 10
 local Radius        = 25
 local StepSize      = 50
@@ -14,7 +16,43 @@ local MaxHeight     = 50
 local OffsetAng     = 10
 local Normal        = Vector(1, 1, 0)
 local MinimumPath   = 30
-local MaxIterations = 30000
+local MaxIterations = 50000
+local GridSize      = 250
+local GridHeight    = 50
+
+local function GetCoordinate(Position)
+	return Vector(
+		math.floor(Position.x / GridSize),
+		math.floor(Position.y / GridSize),
+		math.floor(Position.z / GridHeight)
+	)
+end
+
+local function GetPosition(Coordinate)
+	return Vector(
+		math.floor(Coordinate.x * GridSize),
+		math.floor(Coordinate.y * GridSize),
+		math.floor(Coordinate.z * GridHeight)
+	)
+end
+
+local function AddGrid(Position)
+	local Coord = GetCoordinate(Position)
+
+	Nodes[Coord] = true
+end
+
+concommand.Add("path_grid_display", function()
+	for Grid in pairs(Nodes) do
+		debugoverlay.Cross(GetPosition(Grid), 10, Duration, GridColor, true)
+	end
+end)
+
+concommand.Add("path_grid_clear", function()
+	for Grid in pairs(Nodes) do
+		Nodes[Grid] = nil
+	end
+end)
 
 concommand.Add("path_start", function(Player)
 	DakPath.Start = Player:GetEyeTrace().HitPos
@@ -50,6 +88,8 @@ concommand.Add("path_run", function()
 	local Iterations    = 0
 	local DebugStart    = SysTime()
 
+	AddGrid(CurNode)
+
 	while HitGoal == false and Iterations < MaxIterations do
 		Iterations = Iterations + 1
 
@@ -77,12 +117,16 @@ concommand.Add("path_run", function()
 
 				NodeList[NodeCount] = CurNode
 
+				AddGrid(CurNode)
+
 				debugoverlay.Cross(BaseNode, 100, Duration, NodeColor, true)
 			end
 
 			CurNode = BaseNode
 			LastPathNodes = math.max(PathNodes,MinimumPath)
 			PathNodes = 0
+
+			AddGrid(CurNode)
 		else
 			--run trace down to see if area can be stood in
 			local downtrace = {
@@ -133,9 +177,13 @@ concommand.Add("path_run", function()
 
 				LastPathNodes = math.max(PathNodes,MinimumPath)
 				PathNodes = 0
+
+				AddGrid(CurNode)
 			else
 				CurNode   = Vector(Check.HitPos.x,Check.HitPos.y,CheckDown.HitPos.z + 20)
 				PathNodes = PathNodes + 1
+
+				AddGrid(CurNode)
 
 				debugoverlay.Cross(CurNode, 10, Duration, PathColor, true)
 
