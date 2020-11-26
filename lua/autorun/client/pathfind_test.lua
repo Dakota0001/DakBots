@@ -1,10 +1,11 @@
 DakPath = DakPath or {}
+DakPath.Nodes = DakPath.Nodes or {}
 
 local StartColor = Color(0, 255, 0)
 local EndColor   = Color(255, 0, 0)
 local LineColor  = Color(255, 255, 255)
-local NodeColor  = Color(0, 0, 255)
-local PathColor  = Color(0, 0, 0)
+local NodeColor  = Color(255, 0, 255)
+local PathColor  = Color(0, 0, 255)
 
 local Duration      = 10
 local Radius        = 25
@@ -44,71 +45,82 @@ concommand.Add("path_run", function()
 	local Offset        = 0
 	local Dir           = (End - CurNode):GetNormalized() * Normal
 	local HitGoal       = false
-	local NodeList      = {BaseNode}
+	local NodeList      = { BaseNode }
+	local NodeCount     = 1
 	local Iterations    = 0
 	local DebugStart    = SysTime()
 
 	while HitGoal == false and Iterations < MaxIterations do
 		Iterations = Iterations + 1
 
-		local trace = {}
-			trace.start = CurNode - Dir * Radius + Vector(0,0,MaxHeight)
-			trace.endpos = CurNode + Dir * StepSize + Vector(0,0,MaxHeight)
-			trace.filter = {}
-			trace.mins = Vector(-Radius,-Radius,-5)
-			trace.maxs = Vector(Radius,Radius,20)
-			trace.mask = MASK_SOLID_BRUSHONLY
-		local Check = util.TraceHull( trace )
-		--debugoverlay.Cross( Check.HitPos, 10, 10, Color( 255, 255, 100 ), true )
+		local trace = {
+			start = CurNode - Dir * Radius + Vector(0, 0, MaxHeight),
+			endpos = CurNode + Dir * StepSize + Vector(0, 0, MaxHeight),
+			mins = Vector(-Radius, -Radius, -5),
+			maxs = Vector(Radius, Radius, 20),
+			mask = MASK_SOLID_BRUSHONLY,
+		}
+		local Check = util.TraceHull(trace)
+		--debugoverlay.Cross( Check.HitPos, 10, Duration, Color( 255, 255, 100 ), true )
 
 		if Check.Hit then
-			print("World hit, ", PathNodes, LastPathNodes)
-			--debugoverlay.Cross( Check.HitPos, 40, 10, Color( 255, 100, 100 ), true )
 			Offset = Offset + OffsetAng
-			Dir = ((End-CurNode):GetNormalized():Angle() + Angle(0,Offset,0)):Forward() * Normal
+			Dir    = ((End - CurNode):GetNormalized():Angle() + Angle(0, Offset, 0)):Forward() * Normal
 
 			if PathNodes > LastPathNodes then
-				Dir = (End-CurNode):GetNormalized() * Normal
-				BaseNode = CurNode
-				NodeList[#NodeList + 1] = BaseNode
-				debugoverlay.Cross( BaseNode, 100, 10, NodeColor, true )
-				Offset = 0
+				debugoverlay.Line(BaseNode, CurNode, Duration, LineColor, true)
+
+				Dir       = (End - CurNode):GetNormalized() * Normal
+				NodeCount = NodeCount + 1
+				BaseNode  = CurNode
+				Offset    = 0
+
+				NodeList[NodeCount] = CurNode
+
+				debugoverlay.Cross(BaseNode, 100, Duration, NodeColor, true)
 			end
+
 			CurNode = BaseNode
 			LastPathNodes = math.max(PathNodes,MinimumPath)
 			PathNodes = 0
 		else
 			--run trace down to see if area can be stood in
-			local downtrace = {}
-				downtrace.start = Check.HitPos + Vector(0,0,MaxHeight * 2)
-				downtrace.endpos = Check.HitPos + Vector(0,0,-10000)
-				downtrace.filter = {}
-				downtrace.mins = Vector()
-				downtrace.maxs = Vector()
-				downtrace.mask = MASK_SOLID_BRUSHONLY
-			local CheckDown = util.TraceHull( downtrace )
-			local watertrace = {}
-				watertrace.start = Check.HitPos + Vector(0,0,MaxHeight * 2)
-				watertrace.endpos = Check.HitPos + Vector(0,0,-10000)
-				watertrace.filter = {}
-				watertrace.mins = Vector()
-				watertrace.maxs = Vector()
-				watertrace.mask = MASK_WATER
-			local Checkwater = util.TraceHull( watertrace )
+			local downtrace = {
+				start = Check.HitPos + Vector(0, 0, MaxHeight * 2),
+				endpos = Check.HitPos + Vector(0, 0, -10000),
+				mins = Vector(),
+				maxs = Vector(),
+				mask = MASK_SOLID_BRUSHONLY,
+			}
+			local CheckDown = util.TraceHull(downtrace)
 
-			print("Tracedown shit ", CheckDown.HitPos:Distance(Check.HitPos), MaxHeight)
+			local watertrace = {
+				start = Check.HitPos + Vector(0,0,MaxHeight * 2),
+				endpos = Check.HitPos + Vector(0,0,-10000),
+				mins = Vector(),
+				maxs = Vector(),
+				mask = MASK_WATER,
+			}
+			local Checkwater = util.TraceHull(watertrace)
+
 			if CheckDown.HitPos:Distance(Check.HitPos) < MaxHeight or CheckDown.HitPos:Distance(Check.HitPos) > MaxHeight * 2 or (Checkwater.Hit and Checkwater.HitPos.z > CheckDown.HitPos.z) then
-				--debugoverlay.Cross( Check.HitPos, 40, 10, Color( 255, 100, 100 ), true )
+				--debugoverlay.Cross( Check.HitPos, 40, Duration, Color( 255, 100, 100 ), true )
 				Offset = Offset + OffsetAng
-				Dir = ((End-CurNode):GetNormalized():Angle() + Angle(0,Offset,0)):Forward() * Normal
+				Dir    = ((End-CurNode):GetNormalized():Angle() + Angle(0, Offset, 0)):Forward() * Normal
+
 				if PathNodes > LastPathNodes then
-					Dir = (End-CurNode):GetNormalized() * Normal
-					BaseNode = CurNode
-					debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, LineColor, true)
-					NodeList[#NodeList + 1] = BaseNode
-					debugoverlay.Cross( BaseNode, 100, 10, NodeColor, true )
-					Offset = 0
+					debugoverlay.Line(BaseNode, CurNode, Duration, LineColor, true)
+
+					Dir       = (End - CurNode):GetNormalized() * Normal
+					NodeCount = NodeCount + 1
+					BaseNode  = CurNode
+					Offset    = 0
+
+					NodeList[NodeCount] = CurNode
+
+					debugoverlay.Cross(CurNode, 100, Duration, NodeColor, true)
 				end
+
 				if CheckDown.HitPos:Distance(Check.HitPos) > MaxHeight * 2 then
 					if CheckDown.HitPos:Distance(Check.HitPos) > MaxHeight * 3 then
 						CurNode = BaseNode
@@ -118,33 +130,44 @@ concommand.Add("path_run", function()
 				else
 					CurNode = BaseNode
 				end
+
 				LastPathNodes = math.max(PathNodes,MinimumPath)
 				PathNodes = 0
 			else
-				CurNode = Vector(Check.HitPos.x,Check.HitPos.y,CheckDown.HitPos.z + 20)
-				debugoverlay.Cross( CurNode, 10, 10, PathColor, true )
+				CurNode   = Vector(Check.HitPos.x,Check.HitPos.y,CheckDown.HitPos.z + 20)
 				PathNodes = PathNodes + 1
+
+				debugoverlay.Cross(CurNode, 10, Duration, PathColor, true)
+
 				if PathNodes > LastPathNodes and Offset > 0 then
-					Dir = (End-CurNode):GetNormalized() * Normal
-					BaseNode = CurNode
-					debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, LineColor, true)
-					NodeList[#NodeList + 1] = BaseNode
-					debugoverlay.Cross( BaseNode, 100, 10, NodeColor, true )
-					Offset = 0
+					debugoverlay.Line(BaseNode, CurNode, Duration, LineColor, true)
+
+					Dir       = (End - CurNode):GetNormalized() * Normal
+					NodeCount = NodeCount + 1
+					BaseNode  = CurNode
 					PathNodes = 0
+					Offset    = 0
+
+					NodeList[NodeCount] = CurNode
+
+					debugoverlay.Cross(CurNode, 100, Duration, NodeColor, true )
 				end
 			end
 		end
 		if CurNode:Distance(End) <= 100 then
-			BaseNode = CurNode
-			debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, LineColor, true)
-			NodeList[#NodeList + 1] = BaseNode
-			debugoverlay.Cross( BaseNode, 100, 10, NodeColor, true )
-			HitGoal = true
+			debugoverlay.Line(BaseNode, CurNode, Duration, LineColor, true)
+
+			BaseNode  = CurNode
+			NodeCount = NodeCount + 1
+			HitGoal   = true
+
+			NodeList[NodeCount] = CurNode
+
+			debugoverlay.Cross(CurNode, 100, Duration, NodeColor, true )
 		end
 	end
 
 	print("Cycles: " .. Iterations)
-	print("Nodes: " .. (#NodeList))
+	print("Nodes: " .. NodeCount)
 	print("Time: " .. SysTime() - DebugStart)
 end)
