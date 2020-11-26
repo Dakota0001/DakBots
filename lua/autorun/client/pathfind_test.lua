@@ -105,6 +105,8 @@ concommand.Add("path_end", function(Player)
 	Player:ChatPrint("Path end has been setup as " .. tostring(DakPath.End))
 end)
 
+
+
 concommand.Add("path_run", function()
 	if not DakPath.Start then return print("No starting point has been setup with path_start") end
 	if not DakPath.End then return print("No ending point has been setup with path_end") end
@@ -244,4 +246,85 @@ concommand.Add("path_run", function()
 	print("Cycles: " .. Iterations)
 	print("Nodes: " .. NodeCount)
 	print("Time: " .. SysTime() - DebugStart)
+end)
+
+concommand.Add("path_create_node_grid", function()
+	if not DakPath.Start then return print("No starting point has been setup with path_start") end
+	if not DakPath.End then return print("No ending point has been setup with path_end") end
+
+	local Start = DakPath.Start
+	local End   = DakPath.End
+
+	debugoverlay.Cross(Start, 100, Duration, StartColor, true)
+	debugoverlay.Cross(End, 100, Duration, EndColor, true)
+
+	--note, get a Z position that is comfortably inside the world, there's seemingly 0 standardization on those things
+	local ZPos = Start.z
+	local uptrace = util.TraceLine( {
+		start = Vector(0,0,ZPos),
+		endpos = Vector(0,0,ZPos)+Vector(0,0,1)*1000000,
+		mask = MASK_NPCWORLDSTATIC
+	} )
+
+	local startpos = Vector(0,0,uptrace.HitPos.z-25)
+	local righttrace = util.TraceLine( {
+		start = startpos,
+		endpos = startpos+Vector(0,1,0)*1000000,
+		mask = MASK_NPCWORLDSTATIC
+	} )
+	local lefttrace = util.TraceLine( {
+		start = startpos,
+		endpos = startpos-Vector(0,1,0)*1000000,
+		mask = MASK_NPCWORLDSTATIC
+	} )
+	local fronttrace = util.TraceLine( {
+		start = startpos,
+		endpos = startpos+Vector(1,0,0)*1000000,
+		mask = MASK_NPCWORLDSTATIC
+	} )
+	local backtrace = util.TraceLine( {
+		start = startpos,
+		endpos = startpos-Vector(1,0,0)*1000000,
+		mask = MASK_NPCWORLDSTATIC
+	} )
+
+	local MapCenter = (righttrace.HitPos+lefttrace.HitPos+fronttrace.HitPos+backtrace.HitPos)*0.25
+	local NodeStart = Vector(fronttrace.HitPos.x,lefttrace.HitPos.y,uptrace.HitPos.z)
+
+	local StepSize = 50
+	local XDist = math.abs(fronttrace.HitPos.x)+math.abs(backtrace.HitPos.x)
+	local YDist = math.abs(lefttrace.HitPos.y)+math.abs(righttrace.HitPos.y)
+	local XNodes = XDist/StepSize
+	local YNodes = YDist/StepSize
+	local CurVector = Vector(0,0,0)
+	local Nodes = {}
+
+	for i=1, XNodes do
+		for j=1, YNodes do
+			CurVector = Vector(-StepSize*i,StepSize*j,0)
+			local downtrace = {}
+				downtrace.start = NodeStart + CurVector
+				downtrace.endpos = NodeStart + CurVector + Vector(0,0,-10000)
+				downtrace.filter = {}
+				downtrace.mins = Vector(0)
+				downtrace.maxs = Vector(0)
+				downtrace.mask = MASK_SOLID_BRUSHONLY
+			local CheckDown = util.TraceHull( downtrace )
+			local watertrace = {}
+				watertrace.start = NodeStart + CurVector
+				watertrace.endpos = NodeStart + CurVector + Vector(0,0,-10000)
+				watertrace.filter = {}
+				watertrace.mins = Vector(0)
+				watertrace.maxs = Vector(0)
+				watertrace.mask = MASK_WATER
+			local Checkwater = util.TraceHull( watertrace )
+			if not(Checkwater.Hit and Checkwater.HitPos.z>CheckDown.HitPos.z) then
+				Nodes[#Nodes+1] = CheckDown.HitPos
+				--debugoverlay.Cross( CheckDown.HitPos, 10, 10, Color( 255, 255, 255 ), true )
+			end
+		end
+	end
+	for i=1, #Nodes do
+		AddNode(Nodes[i])
+	end
 end)
