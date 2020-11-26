@@ -37,7 +37,7 @@ while HitGoal == false and runs < 10000 do
 		if PathNodes > LastPathNodes then
 			Dir = (End-CurNode):GetNormalized()*Vector(1,1,0)
 			BaseNode = CurNode
-			debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, Color( 255, 255, 255 ), true)
+			--debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, Color( 255, 255, 255 ), true)
 			NodeList[#NodeList+1] = BaseNode
 			debugoverlay.Cross( BaseNode, 100, 10, Color( 0, 0, 255 ), true )
 			Offset = 0
@@ -70,7 +70,7 @@ while HitGoal == false and runs < 10000 do
 			if PathNodes > LastPathNodes then
 				Dir = (End-CurNode):GetNormalized()*Vector(1,1,0)
 				BaseNode = CurNode
-				debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, Color( 255, 255, 255 ), true)
+				--debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, Color( 255, 255, 255 ), true)
 				NodeList[#NodeList+1] = BaseNode
 				debugoverlay.Cross( BaseNode, 100, 10, Color( 0, 0, 255 ), true )
 				Offset = 0
@@ -93,7 +93,7 @@ while HitGoal == false and runs < 10000 do
 			if PathNodes > LastPathNodes and Offset > 0 then
 				Dir = (End-CurNode):GetNormalized()*Vector(1,1,0)
 				BaseNode = CurNode
-				debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, Color( 255, 255, 255 ), true)
+				--debugoverlay.Line( NodeList[#NodeList], BaseNode, 10, Color( 255, 255, 255 ), true)
 				NodeList[#NodeList+1] = BaseNode
 				debugoverlay.Cross( BaseNode, 100, 10, Color( 0, 0, 255 ), true )
 				Offset = 0
@@ -195,7 +195,7 @@ while HitFinalGoal == false and runs3 < 10000 do
 			HitGoal = true
 		end
 	end
-	if #FinalWaypoints==10 then--FinalWaypoints[#FinalWaypoints]:Distance(NodeList[#NodeList]) <= 100 then
+	if FinalWaypoints[#FinalWaypoints]:Distance(NodeList[#NodeList]) <= 100 then
 		HitFinalGoal = true
 	end
 end
