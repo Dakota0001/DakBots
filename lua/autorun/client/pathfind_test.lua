@@ -483,10 +483,10 @@ function AStar(Start, End)
 	local H
 	local CurrentNode = GetNodeNoKey(Start)
 	local runs = 0
+	local CameFrom = {}
 	while Goal == false and runs < 1000 do
 		runs = runs + 1
 		G = 0
-		--H = math.abs(Start.x - End.x) + math.abs(Start.y - End.y) --manhattan
 		H = math.sqrt(math.pow(Start.x - End.x,2) + math.pow(Start.y - End.y,2)) --euclidean
 		F = G + H
 
@@ -509,7 +509,6 @@ function AStar(Start, End)
 			for New, Node in pairs(OpenList) do
 				if istable(Node) then
 					potentialG = G + math.sqrt(math.pow(CurrentNode.Bottom.x - Node.Bottom.x,2) + math.pow(CurrentNode.Bottom.y - Node.Bottom.y,2))
-					--H = math.abs(Start.x - End.x) + math.abs(Start.y - End.y) --manhattan
 					H = math.sqrt(math.pow(Node.Bottom.x - End.x,2) + math.pow(Node.Bottom.y - End.y,2)) --euclidean
 					F = potentialG + H
 					
@@ -520,11 +519,27 @@ function AStar(Start, End)
 				end
 			end
 			G = G + potentialG
+			CameFrom[lowestNode.Key] = CurrentNode.Key
 			CurrentNode = lowestNode
 			debugoverlay.Cross(DakPath.Start, 100, 10, Color(0,255,0), true )
 			debugoverlay.Cross(DakPath.End, 100, 10, Color(255,0,0), true )
-			debugoverlay.Cross(CurrentNode.Bottom, 10, 10, Color(0,0,255), true )
-			print(runs)
+			--debugoverlay.Cross(CurrentNode.Bottom, 10, 10, Color(0,0,255), true )
+		end
+	end
+	print(runs)
+
+	--some sort of backtracing attempt but then i realized that it's all one big line anyway that needs to be untangled
+	local Traced = false
+	local runs = 0
+	local key = GetNodeNoKey(End).Key
+	local waypoints = {}
+	while Traced == false and runs < 1000 do
+		waypoints[#waypoints+1] = Nodes[key].Bottom
+		debugoverlay.Cross(Nodes[key].Bottom, 10, 10, Color(0,0,255), true )
+		if key == GetNodeNoKey(Start).Key then
+			Traced = true
+		else
+			key = CameFrom[key]
 		end
 	end
 end
