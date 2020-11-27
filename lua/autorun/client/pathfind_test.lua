@@ -8,6 +8,7 @@ local LineColor  = Color(255, 255, 255)
 local NodeColor  = Color(255, 0, 255)
 local PathColor  = Color(0, 0, 255)
 local GridColor  = Color(255, 255, 0)
+local SideColor  = Color(0, 255, 255)
 
 local Nodes         = DakPath.Nodes
 local Unused        = DakPath.Unused
@@ -17,10 +18,14 @@ local StepSize      = 50
 local MaxHeight     = 50
 local OffsetAng     = 10
 local Normal        = Vector(1, 1, 0)
+local PosOffset     = Vector(0, 0, 10)
+local UpNormal      = Vector(0, 0, 1)
+local MaxSlope      = math.cos(math.rad(45))
 local MinimumPath   = 30
 local MaxIterations = 50000
 local GridSize      = 75
-local GridHeight    = 25
+local GridHeight    = 75
+local JumpHeight    = 56 -- Totally not a random number I decided to pick because of the stairs
 local GridCube      = Vector(GridSize, GridSize, GridHeight) * 0.495 -- Leaving a small gap between each of them
 local HalfHeight    = Vector(0, 0, GridHeight * 0.5)
 local VectorFormat  = "[%s, %s, %s]"
@@ -34,45 +39,63 @@ local function GetCoordinate(Position)
 	return math.Round(Position.x / GridSize), math.Round(Position.y / GridSize), math.Round(Position.z / GridHeight)
 end
 
-local function IsValidNode(CheckDown, CheckWater)
+local function IsValidNode(Top, Bottom)
+	DownTrace.start  = Top
+	DownTrace.endpos = Bottom
+
+	local CheckDown = util.TraceHull(DownTrace)
+
 	if not CheckDown.Hit then return false end
 	if CheckDown.StartSolid then return false end
-	if CheckDown.HitTexture == "**empty**" then return false end
+	if CheckDown.HitNotSolid then return false end
+	if UpNormal:Dot(CheckDown.HitNormal) < MaxSlope then return false end
+
+	DownTrace.start = CheckDown.HitPos
+	DownTrace.endpos = CheckDown.HitPos - CheckDown.Normal * 72
+
+	if util.TraceHull(DownTrace).Hit then return false end -- Players won't fit
+
+	WaterTrace.start = Top
+	WaterTrace.endpos = Bottom
+
+	local CheckWater = util.TraceHull(WaterTrace)
+
 	if CheckWater.Hit then return false end
 
-	return true
+	return true, CheckDown
+end
+
+local function GetNode(Position)
+	local X, Y, Z = GetCoordinate(Position)
+	local Key = VectorFormat:format(X, Y, Z)
+
+	return Nodes[Key], Key
 end
 
 local function AddNode(Position)
-	local X, Y, Z = GetCoordinate(Position)
-	local Key  = VectorFormat:format(X, Y, Z)
-	local Node = Nodes[Key]
+	local Node, Key = GetNode(Position)
 
 	if not Node or Unused[Key] then
+		local X, Y, Z    = GetCoordinate(Position)
 		local Coordinate = Vector(X, Y, Z)
 		local Center     = Vector(X * GridSize, Y * GridSize, Z * GridHeight)
 		local Top, Bottom = Center + HalfHeight, Center - HalfHeight
+		local Valid, CheckDown = IsValidNode(Top, Bottom)
 
-		DownTrace.start  = Top
-		DownTrace.endpos = Bottomw
-
-		local CheckDown = util.TraceHull(DownTrace)
-
-		WaterTrace.start = Top
-		WaterTrace.endpos = Bottom
-
-		local CheckWater = util.TraceHull(WaterTrace)
-
-		if not IsValidNode(CheckDown, CheckWater) then
-			Unused[Key] = { Center = Center }
+		if not Valid then
+			Unused[Key] = true
 			return
 		end
 
 		Node = {
+			Key        = Key,
 			Coordinate = Coordinate,
 			Center     = Center,
+			Top        = Top,
 			Floor      = CheckDown.HitPos,
+			Bottom     = Bottom,
 			Sides      = {},
+			SideCount  = 0,
 		}
 
 		Nodes[Key] = Node
@@ -81,15 +104,38 @@ local function AddNode(Position)
 	return Node
 end
 
+local function RemoveNode(Position)
+	local Node, Key = GetNode(Position)
+
+	if Node then
+		for Side in pairs(Node.Sides) do
+			Side.Sides[Node] = nil
+		end
+
+		Nodes[Key] = nil
+	end
+end
+
+local function ClearNodes()
+	for Node in pairs(Nodes) do
+		Nodes[Node] = nil
+	end
+
+	for Node in pairs(Unused) do
+		Unused[Node] = nil
+	end
+end
+
 local function DrawNodes()
 	local Position = LocalPlayer():GetEyeTrace().HitPos
 	local Center   = Vector(GetCoordinate(Position))
 	local Offset   = Vector()
 	local NoAngle  = Angle()
+	local Amount   = 5
 
-	for X = Center.x - 10, Center.x + 10 do
-		for Y = Center.y - 10, Center.y + 10 do
-			for Z = Center.z - 10, Center.z + 10 do
+	for X = Center.x - Amount, Center.x + Amount do
+		for Y = Center.y - Amount, Center.y + Amount do
+			for Z = Center.z - Amount, Center.z + Amount do
 				Offset.x = X
 				Offset.y = Y
 				Offset.z = Z
@@ -97,18 +143,48 @@ local function DrawNodes()
 				local Key = VectorFormat:format(X, Y, Z)
 				local Node = Nodes[Key]
 
-				if Node then
-					render.DrawWireframeBox(Node.Center, NoAngle, -GridCube, GridCube, GridColor, true)
-					render.DrawWireframeSphere(Node.Floor, 10, 10, 10, StartColor, true)
-				end
+				if not Node then continue end
 
+				render.DrawWireframeBox(Node.Center, NoAngle, -GridCube, GridCube, GridColor, true)
+				render.DrawWireframeSphere(Node.Floor, 10, 4, 4, StartColor, true)
+
+				if Node.SideCount == 0 then continue end
+
+				local NodeFloor = Node.Floor + PosOffset
+
+				for Side in pairs(Node.Sides) do
+					render.DrawLine(NodeFloor, Side.Floor + PosOffset, SideColor, true)
+				end
 			end
 		end
 	end
 end
 
+-- TODO: Add more garbage here
+local function CanConnect(Node1, Node2)
+	DownTrace.start = Node1.Top
+	DownTrace.endpos = Node2.Top
+
+	if util.TraceHull(DownTrace).Hit then return false end
+
+	local Floor1 = Node1.Floor
+	local Floor2 = Node2.Floor
+
+	DownTrace.start = Floor1
+	DownTrace.endpos = Floor2
+
+	if util.TraceHull(DownTrace).Hit then
+		local Height = math.abs(Floor1.z - Floor2.z)
+
+		if Height > JumpHeight then return false end
+	end
+
+	return true
+end
+
 local function GetNeighbours(Node, Checked)
 	local Start  = Vector(Node.Center:Unpack())
+	local Count  = Node.SideCount
 	local Sides  = Node.Sides
 	local Offset = Vector()
 	local Found  = {}
@@ -124,20 +200,42 @@ local function GetNeighbours(Node, Checked)
 				local Current  = AddNode(Position)
 
 				if not Current then continue end
+				if not CanConnect(Node, Current) then
+					if Current.SideCount == 0 then
+						RemoveNode(Position)
+					end
 
-				local Key = VectorFormat:format(Current.Coordinate:Unpack())
-
-				if Checked[Key] then continue end
-				if not Sides[Current] then
-					Sides[Current] = {
-						Distance = Start:DistToSqr(Position),
-					}
+					continue
 				end
 
-				Found[Key] = Current
+				local Distance = Start:DistToSqr(Position)
+				local CurSides = Current.Sides
+				local Key      = Current.Key
+
+				if not Sides[Current] then
+					Sides[Current] = {
+						Distance = Distance,
+					}
+
+					Count = Count + 1
+				end
+
+				if not CurSides[Node] then
+					CurSides[Node] = {
+						Distance = Distance,
+					}
+
+					Current.SideCount = Current.SideCount + 1
+				end
+
+				if not Checked[Key] then
+					Found[Key] = Current
+				end
 			end
 		end
 	end
+
+	Node.SideCount = Count
 
 	return Found
 end
@@ -154,29 +252,31 @@ end)
 
 -- Clears nodes and unused nodes from memory
 concommand.Add("path_grid_clear", function()
-	for Node in pairs(Nodes) do
-		Nodes[Node] = nil
-	end
-
-	for Node in pairs(Unused) do
-		Unused[Node] = nil
-	end
+	ClearNodes()
 
 	hook.Remove("PostDrawOpaqueRenderables", "Path Grid Display")
 end)
 
 -- Sets the start position for the pathfinder
 concommand.Add("path_start", function(Player)
-	DakPath.Start = Player:GetEyeTrace().HitPos
+	local Start = Player:GetEyeTrace().HitPos
 
-	Player:ChatPrint("Path start has been setup as " .. tostring(DakPath.Start))
+	DakPath.Start = Start
+
+	Player:ChatPrint("Path start has been setup as " .. tostring(Start))
+
+	debugoverlay.Cross(Start, 100, Duration, StartColor, true)
 end)
 
 -- Sets the end position for the pathfinder
 concommand.Add("path_end", function(Player)
-	DakPath.End = Player:GetEyeTrace().HitPos
+	local End = Player:GetEyeTrace().HitPos
 
-	Player:ChatPrint("Path end has been setup as " .. tostring(DakPath.End))
+	DakPath.End = End
+
+	Player:ChatPrint("Path end has been setup as " .. tostring(End))
+
+	debugoverlay.Cross(End, 100, Duration, EndColor, true)
 end)
 
 -- Runs the test pathfinder
@@ -324,6 +424,8 @@ end)
 -- Generates a set of walkable nodes with the start position as origin
 concommand.Add("path_generate", function()
 	if not DakPath.Start then return print("No starting point has been setup with path_start") end
+
+	ClearNodes() -- I don't want to call path_grid_clear every time I do this
 
 	local StartPos   = DakPath.Start
 	local Checked    = {}
