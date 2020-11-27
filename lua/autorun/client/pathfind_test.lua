@@ -72,6 +72,13 @@ local function GetNode(Position)
 	return Nodes[Key], Key
 end
 
+local function GetNodeNoKey(Position)
+	local X, Y, Z = GetCoordinate(Position)
+	local Key = VectorFormat:format(X, Y, Z)
+
+	return Nodes[Key]
+end
+
 local function AddNode(Position)
 	local Node, Key = GetNode(Position)
 
@@ -239,6 +246,11 @@ local function GetNeighbours(Node, Checked)
 
 	return Found
 end
+
+-- runs astar test and shows path
+concommand.Add("path_run_astar", function()
+	AStar(DakPath.Start, DakPath.End)
+end)
 
 -- Activates the node debug view
 concommand.Add("path_grid_show", function()
@@ -461,3 +473,58 @@ concommand.Add("path_generate", function()
 	print("Duration:", Finish - Start)
 	print("Total Nodes:", Total)
 end)
+
+function AStar(Start, End)
+	local OpenList = {GetNodeNoKey(Start)}
+	local ClosedList = {}
+	local Goal = false
+	local F
+	local G
+	local H
+	local CurrentNode = GetNodeNoKey(Start)
+	local runs = 0
+	while Goal == false and runs < 1000 do
+		runs = runs + 1
+		G = 0
+		--H = math.abs(Start.x - End.x) + math.abs(Start.y - End.y) --manhattan
+		H = math.sqrt(math.pow(Start.x - End.x,2) + math.pow(Start.y - End.y,2)) --euclidean
+		F = G + H
+
+		if CurrentNode == GetNodeNoKey(End) then
+			Goal = true
+		else
+			ClosedList[CurrentNode.Key] = CurrentNode
+			--table.RemoveByValue( OpenList, CurrentNode )
+			--PrintTable(OpenList)
+			local Options = GetNeighbours(CurrentNode,ClosedList)
+
+			for New, Node in pairs(Options) do
+				if Node.Bottom~=nil then
+					OpenList[Node.Key] = Node
+				end
+			end
+			local LowestF = math.huge
+			local lowestNode
+			local potentialG
+			for New, Node in pairs(OpenList) do
+				if istable(Node) then
+					potentialG = G + math.sqrt(math.pow(CurrentNode.Bottom.x - Node.Bottom.x,2) + math.pow(CurrentNode.Bottom.y - Node.Bottom.y,2))
+					--H = math.abs(Start.x - End.x) + math.abs(Start.y - End.y) --manhattan
+					H = math.sqrt(math.pow(Node.Bottom.x - End.x,2) + math.pow(Node.Bottom.y - End.y,2)) --euclidean
+					F = potentialG + H
+					
+					if F < LowestF and potentialG>0 and not(ClosedList[Node.Key]) then
+						LowestF = F
+						lowestNode = Node
+					end
+				end
+			end
+			G = G + potentialG
+			CurrentNode = lowestNode
+			debugoverlay.Cross(DakPath.Start, 100, 10, Color(0,255,0), true )
+			debugoverlay.Cross(DakPath.End, 100, 10, Color(255,0,0), true )
+			debugoverlay.Cross(CurrentNode.Bottom, 10, 10, Color(0,0,255), true )
+			print(runs)
+		end
+	end
+end
