@@ -1,6 +1,7 @@
 DakPath = DakPath or {}
 DakPath.Nodes = DakPath.Nodes or {}
 DakPath.Unused = DakPath.Unused or {}
+DakPath.Paths = DakPath.Paths or {}
 
 local StartColor = Color(0, 255, 0)
 local EndColor   = Color(255, 0, 0)
@@ -35,8 +36,6 @@ local CheckNode = {}
 local DownTrace = { start = true, endpos = true, mins = Vector(), maxs = Vector(), mask = MASK_SOLID_BRUSHONLY }
 local WaterTrace = { start = true, endpos = true, mins = Vector(), maxs = Vector(), mask = MASK_WATER }
 local NodeTrace = { start = true, endpos = true, mins = Vector(-Radius, -Radius, -5), maxs = Vector(Radius, Radius, 20), mask = MASK_SOLID_BRUSHONLY, output = CheckNode }
-
-local Paths = {}
 
 local function DropVector(Vec)
 	DownTrace.start  = Vec+Vector(0,0,500)
@@ -301,10 +300,14 @@ end)
 
 concommand.Add("path_save", function()
 	if not(file.Exists( "dakpaths", "DATA" )) then file.CreateDir( "dakpaths" ) end
-	file.Write( "dakpaths/"..game.GetMap()..".txt", util.TableToJSON( Paths ) )
+	file.Write( "dakpaths/"..game.GetMap()..".txt", util.TableToJSON( DakPath.Paths ) )
 	print("File Saved as: dakpaths/"..game.GetMap()..".txt")
 end)
 
+concommand.Add("path_clear", function()
+	DakPath.Paths = {}
+	print("Path list purged.")
+end)
 
 -- Deactivates the node debug view
 concommand.Add("path_grid_hide", function()
@@ -341,9 +344,9 @@ concommand.Add("path_end", function(Player)
 end)
 
 concommand.Add("show_astar_paths", function()
-	for i=1, #Paths do
-		for j=1, #Paths[i] do
-			debugoverlay.Box(Paths[i][j].Floor, Vector(GridSize, GridSize, GridHeight) * -0.5, Vector(GridSize, GridSize, GridHeight) * 0.5, 15, Color(0, 255, 0))
+	for i=1, #DakPath.Paths do
+		for j=1, #DakPath.Paths[i] do
+			debugoverlay.Box(DakPath.Paths[i][j].Floor, Vector(GridSize, GridSize, GridHeight) * -0.5, Vector(GridSize, GridSize, GridHeight) * 0.5, 15, Color(0, 255, 0))
 		end
 	end
 end)
@@ -628,7 +631,7 @@ function AStar(Start, End)
 			Route[#Route + 1] = Closed[CurNode].Source
 			CurNode = Closed[CurNode].Source
 		end
-		Paths[#Paths+1] = Route
+		DakPath.Paths[#DakPath.Paths+1] = Route
 		--for _, V in ipairs(Route) do
 		--	debugoverlay.Box(V.Floor, Vector(GridSize, GridSize, GridHeight) * -0.5, Vector(GridSize, GridSize, GridHeight) * 0.5, 15, Color(0, 255, 0))
 		--end
