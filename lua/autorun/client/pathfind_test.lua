@@ -299,6 +299,13 @@ concommand.Add("path_grid_show", function()
 	hook.Add("PostDrawOpaqueRenderables", "Path Grid Display", DrawNodes)
 end)
 
+concommand.Add("path_save", function()
+	if not(file.Exists( "dakpaths", "DATA" )) then file.CreateDir( "dakpaths" ) end
+	file.Write( "dakpaths/"..game.GetMap()..".txt", util.TableToJSON( Paths ) )
+	print("File Saved as: dakpaths/"..game.GetMap()..".txt")
+end)
+
+
 -- Deactivates the node debug view
 concommand.Add("path_grid_hide", function()
 	hook.Remove("PostDrawOpaqueRenderables", "Path Grid Display")
