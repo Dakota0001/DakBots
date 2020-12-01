@@ -23,7 +23,7 @@ local UpNormal      = Vector(0, 0, 1)
 local MaxSlope      = math.cos(math.rad(45))
 local MinimumPath   = 30
 local MaxIterations = 50000
-local GridSize      = 75
+local GridSize      = 150
 local GridHeight    = 75
 local JumpHeight    = 56 -- Totally not a random number I decided to pick because of the stairs
 local GridCube      = Vector(GridSize, GridSize, GridHeight) * 0.495 -- Leaving a small gap between each of them
@@ -34,6 +34,8 @@ local CheckNode = {}
 local DownTrace = { start = true, endpos = true, mins = Vector(), maxs = Vector(), mask = MASK_SOLID_BRUSHONLY }
 local WaterTrace = { start = true, endpos = true, mins = Vector(), maxs = Vector(), mask = MASK_WATER }
 local NodeTrace = { start = true, endpos = true, mins = Vector(-Radius, -Radius, -5), maxs = Vector(Radius, Radius, 20), mask = MASK_SOLID_BRUSHONLY, output = CheckNode }
+
+local Paths = {}
 
 local function VectorToGrid(Position)
 	return math.Round(Position.x / GridSize), math.Round(Position.y / GridSize), math.Round(Position.z / GridHeight)
@@ -252,6 +254,32 @@ concommand.Add("path_run_astar", function()
 	AStar(DakPath.Start, DakPath.End)
 end)
 
+concommand.Add("path_make_all_paths", function()
+	local VecTable = {
+		Vector(111.21690368652, -329.15167236328, -3449.96875),
+		Vector(1033.4080810547, -11927.537109375, -2931.0432128906),
+		Vector(-12372.145507813, -11344.141601563, -3327.9558105469),
+		Vector(-9305.3740234375, 941.68090820313, -3321.1452636719),
+		Vector(-12777.774414063, 7177.6962890625, -2993.7590332031),
+		Vector(-6259.2866210938, 2982.8078613281, -3294.0197753906),
+		Vector(-5839.708984375, -8377.15625, -3647.3486328125),
+		Vector(-754.16394042969, 9957.4892578125, -3308.4055175781),
+		Vector(3425.7854003906, 6805.392578125, -2992.5424804688),
+		Vector(1462.0169677734, -6538.375, -3212.3059082031),
+		Vector(9223.1982421875, -6720.69140625, -3002.7626953125),
+		Vector(11080.934570313, -3762.5844726563, -2934.8410644531),
+		Vector(7897.71875, 2508.1240234375, -3320.9345703125),
+		Vector(11560.930664063, 12248.51171875, -3327.96875),
+		Vector(5303.6704101563, 9606.1435546875, -2999.4294433594)
+	}
+
+	for i=1, #VecTable do
+		for j=1, #VecTable do
+			AStar(VecTable[j], VecTable[i])
+		end
+	end
+end)
+
 -- Activates the node debug view
 concommand.Add("path_grid_show", function()
 	hook.Add("PostDrawOpaqueRenderables", "Path Grid Display", DrawNodes)
@@ -290,6 +318,15 @@ concommand.Add("path_end", function(Player)
 
 	debugoverlay.Cross(End, 100, Duration, EndColor, true)
 end)
+
+concommand.Add("show_astar_paths", function()
+	for i=1, #Paths do
+		for j=1, #Paths[i] do
+			debugoverlay.Box(Paths[i][j].Floor, Vector(GridSize, GridSize, GridHeight) * -0.5, Vector(GridSize, GridSize, GridHeight) * 0.5, 15, Color(0, 255, 0))
+		end
+	end
+end)
+
 
 -- Runs the test pathfinder
 concommand.Add("path_run", function()
@@ -508,10 +545,16 @@ local function GetLowestNode()
 	return Select
 end
 
+local function DropVector(Vec)
+	DownTrace.start  = Vec+Vector(0,0,500)
+	DownTrace.endpos = Vec-Vector(0,0,500)
+	local CheckDown = util.TraceHull(DownTrace)
+	return CheckDown.HitPos
+end
+
 function AStar(Start, End)
 	local StartNode = GetNodeFromVector(Start)
 	local EndNode   = GetNodeFromVector(End)
-
 	Closed = {}
 	Open = {
 		[StartNode] = {
@@ -571,10 +614,10 @@ function AStar(Start, End)
 			Route[#Route + 1] = Closed[CurNode].Source
 			CurNode = Closed[CurNode].Source
 		end
-
-		for _, V in ipairs(Route) do
-			debugoverlay.Box(V.Floor, Vector(GridSize, GridSize, GridHeight) * -0.5, Vector(GridSize, GridSize, GridHeight) * 0.5, 15, Color(0, 255, 0))
-		end
+		Paths[#Paths+1] = Route
+		--for _, V in ipairs(Route) do
+		--	debugoverlay.Box(V.Floor, Vector(GridSize, GridSize, GridHeight) * -0.5, Vector(GridSize, GridSize, GridHeight) * 0.5, 15, Color(0, 255, 0))
+		--end
 	else
 		print("No path found!")
 	end
