@@ -17,14 +17,15 @@ local Radius        = 25
 local StepSize      = 50
 local MaxHeight     = 50
 local OffsetAng     = 10
+local WadeDepth		= 48
 local Normal        = Vector(1, 1, 0)
 local PosOffset     = Vector(0, 0, 10)
 local UpNormal      = Vector(0, 0, 1)
 local MaxSlope      = math.cos(math.rad(45))
 local MinimumPath   = 30
 local MaxIterations = 50000
-local GridSize      = 150
-local GridHeight    = 75
+local GridSize      = 75
+local GridHeight    = 150
 local JumpHeight    = 56 -- Totally not a random number I decided to pick because of the stairs
 local GridCube      = Vector(GridSize, GridSize, GridHeight) * 0.495 -- Leaving a small gap between each of them
 local HalfHeight    = Vector(0, 0, GridHeight * 0.5)
@@ -36,6 +37,13 @@ local WaterTrace = { start = true, endpos = true, mins = Vector(), maxs = Vector
 local NodeTrace = { start = true, endpos = true, mins = Vector(-Radius, -Radius, -5), maxs = Vector(Radius, Radius, 20), mask = MASK_SOLID_BRUSHONLY, output = CheckNode }
 
 local Paths = {}
+
+local function DropVector(Vec)
+	DownTrace.start  = Vec+Vector(0,0,500)
+	DownTrace.endpos = Vec-Vector(0,0,500)
+	local CheckDown = util.TraceHull(DownTrace)
+	return CheckDown.HitPos
+end
 
 local function VectorToGrid(Position)
 	return math.Round(Position.x / GridSize), math.Round(Position.y / GridSize), math.Round(Position.z / GridHeight)
@@ -62,7 +70,7 @@ local function IsValidNode(Top, Bottom)
 
 	local CheckWater = util.TraceHull(WaterTrace)
 
-	if CheckWater.Hit then return false end
+	if CheckWater.Hit and CheckDown.HitPos.z+WadeDepth<CheckWater.HitPos.z then return false end
 
 	return true, CheckDown
 end
@@ -256,27 +264,33 @@ end)
 
 concommand.Add("path_make_all_paths", function()
 	local VecTable = {
-		Vector(111.21690368652, -329.15167236328, -3449.96875),
-		Vector(1033.4080810547, -11927.537109375, -2931.0432128906),
-		Vector(-12372.145507813, -11344.141601563, -3327.9558105469),
-		Vector(-9305.3740234375, 941.68090820313, -3321.1452636719),
-		Vector(-12777.774414063, 7177.6962890625, -2993.7590332031),
-		Vector(-6259.2866210938, 2982.8078613281, -3294.0197753906),
-		Vector(-5839.708984375, -8377.15625, -3647.3486328125),
-		Vector(-754.16394042969, 9957.4892578125, -3308.4055175781),
-		Vector(3425.7854003906, 6805.392578125, -2992.5424804688),
-		Vector(1462.0169677734, -6538.375, -3212.3059082031),
-		Vector(9223.1982421875, -6720.69140625, -3002.7626953125),
-		Vector(11080.934570313, -3762.5844726563, -2934.8410644531),
-		Vector(7897.71875, 2508.1240234375, -3320.9345703125),
-		Vector(11560.930664063, 12248.51171875, -3327.96875),
-		Vector(5303.6704101563, 9606.1435546875, -2999.4294433594)
+		Vector(9097.475586, -11095.366211, 3648.031250),
+		Vector(6137.738281, 1248.062622, 2719.822266),
+		Vector(10387.305664, 9959.908203, 3368.031250),
+		Vector(30.444704, 8613.874023, 2368.031250),
+		Vector(1834.775024, -1075.389526, 2270.761230),
+		Vector(-10111.933594, -10227.226563, 3368.031250),
+		Vector(-5272.229492, 2796.873291, 2737.434570),
+		Vector(-11754.385742, 10937.160156, 4147.003906) --had to be changed
 	}
-
+	local Fine = true
+	local Broke = {}
 	for i=1, #VecTable do
-		for j=1, #VecTable do
-			AStar(VecTable[j], VecTable[i])
+		if GetNodeFromVector(DropVector(VecTable[i])) == nil then 
+			Fine = false
+			Broke[#Broke+1] = i
+			debugoverlay.Box(DropVector(VecTable[i]), Vector(GridSize, GridSize, GridHeight) * -0.5, Vector(GridSize, GridSize, GridHeight) * 0.5, 15, Color(255, 0, 0))
 		end
+	end
+	if Fine == true then
+		for i=1, #VecTable do
+			for j=1, #VecTable do
+				AStar(DropVector(VecTable[j]), DropVector(VecTable[i]))
+			end
+		end
+	else
+		print("Invalid Node Positions:")
+		PrintTable(Broke)
 	end
 end)
 
@@ -545,13 +559,6 @@ local function GetLowestNode()
 	return Select
 end
 
-local function DropVector(Vec)
-	DownTrace.start  = Vec+Vector(0,0,500)
-	DownTrace.endpos = Vec-Vector(0,0,500)
-	local CheckDown = util.TraceHull(DownTrace)
-	return CheckDown.HitPos
-end
-
 function AStar(Start, End)
 	local StartNode = GetNodeFromVector(Start)
 	local EndNode   = GetNodeFromVector(End)
@@ -564,7 +571,7 @@ function AStar(Start, End)
 	}
 
 	local STARTTIME = SysTime()
-	local ENDTIME
+	local ENDTIME = SysTime()
 
 	while next(Open) do
 		local CurNode = GetLowestNode() -- Get lowest scoring node
@@ -596,7 +603,7 @@ function AStar(Start, End)
 
 					OpenNode(Node, G + H, G, CurNode)
 
-					debugoverlay.Cross(Node.Floor + Vector(0, 0, 5) + VectorRand() * 4, 5, 15, ColorRand(100, 255))
+					--debugoverlay.Cross(Node.Floor + Vector(0, 0, 5) + VectorRand() * 4, 5, 15, ColorRand(100, 255))
 				end
 			end
 		end
