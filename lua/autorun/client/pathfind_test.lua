@@ -35,7 +35,7 @@ local DownTrace = { start = true, endpos = true, mins = Vector(), maxs = Vector(
 local WaterTrace = { start = true, endpos = true, mins = Vector(), maxs = Vector(), mask = MASK_WATER }
 local NodeTrace = { start = true, endpos = true, mins = Vector(-Radius, -Radius, -5), maxs = Vector(Radius, Radius, 20), mask = MASK_SOLID_BRUSHONLY, output = CheckNode }
 
-local function GetCoordinate(Position)
+local function VectorToGrid(Position)
 	return math.Round(Position.x / GridSize), math.Round(Position.y / GridSize), math.Round(Position.z / GridHeight)
 end
 
@@ -66,14 +66,14 @@ local function IsValidNode(Top, Bottom)
 end
 
 local function GetNode(Position)
-	local X, Y, Z = GetCoordinate(Position)
+	local X, Y, Z = VectorToGrid(Position)
 	local Key = VectorFormat:format(X, Y, Z)
 
 	return Nodes[Key], Key
 end
 
-local function GetNodeNoKey(Position)
-	local X, Y, Z = GetCoordinate(Position)
+local function GetNodeFromVector(Position)
+	local X, Y, Z = VectorToGrid(Position)
 	local Key = VectorFormat:format(X, Y, Z)
 
 	return Nodes[Key]
@@ -83,7 +83,7 @@ local function AddNode(Position)
 	local Node, Key = GetNode(Position)
 
 	if not Node or Unused[Key] then
-		local X, Y, Z    = GetCoordinate(Position)
+		local X, Y, Z    = VectorToGrid(Position)
 		local Coordinate = Vector(X, Y, Z)
 		local Center     = Vector(X * GridSize, Y * GridSize, Z * GridHeight)
 		local Top, Bottom = Center + HalfHeight, Center - HalfHeight
@@ -135,10 +135,10 @@ end
 
 local function DrawNodes()
 	local Position = LocalPlayer():GetEyeTrace().HitPos
-	local Center   = Vector(GetCoordinate(Position))
+	local Center   = Vector(VectorToGrid(Position))
 	local Offset   = Vector()
 	local NoAngle  = Angle()
-	local Amount   = 5
+	local Amount   = 10
 
 	for X = Center.x - Amount, Center.x + Amount do
 		for Y = Center.y - Amount, Center.y + Amount do
@@ -474,72 +474,103 @@ concommand.Add("path_generate", function()
 	print("Total Nodes:", Total)
 end)
 
-function AStar(Start, End)
-	local OpenList = {GetNodeNoKey(Start)}
-	local ClosedList = {}
-	local Goal = false
-	local F
-	local G
-	local H
-	local CurrentNode = GetNodeNoKey(Start)
-	local runs = 0
-	local CameFrom = {}
-	while Goal == false and runs < 1000 do
-		runs = runs + 1
-		G = 0
-		H = math.sqrt(math.pow(Start.x - End.x,2) + math.pow(Start.y - End.y,2)) --euclidean
-		F = G + H
 
-		if CurrentNode == GetNodeNoKey(End) then
-			Goal = true
-		else
-			ClosedList[CurrentNode.Key] = CurrentNode
-			--table.RemoveByValue( OpenList, CurrentNode )
-			--PrintTable(OpenList)
-			local Options = GetNeighbours(CurrentNode,ClosedList)
+local EMPTYTABLE = {}
+local Open, Closed
 
-			for New, Node in pairs(Options) do
-				if Node.Bottom~=nil then
-					OpenList[Node.Key] = Node
-				end
-			end
-			local LowestF = math.huge
-			local lowestNode
-			local potentialG
-			for New, Node in pairs(OpenList) do
-				if istable(Node) then
-					potentialG = G + math.sqrt(math.pow(CurrentNode.Bottom.x - Node.Bottom.x,2) + math.pow(CurrentNode.Bottom.y - Node.Bottom.y,2))
-					H = math.sqrt(math.pow(Node.Bottom.x - End.x,2) + math.pow(Node.Bottom.y - End.y,2)) --euclidean
-					F = potentialG + H
-					
-					if F < LowestF and potentialG>0 and not(ClosedList[Node.Key]) then
-						LowestF = F
-						lowestNode = Node
-					end
-				end
-			end
-			G = G + potentialG
-			CameFrom[lowestNode.Key] = CurrentNode.Key
-			CurrentNode = lowestNode
-			debugoverlay.Cross(DakPath.Start, 100, 10, Color(0,255,0), true )
-			debugoverlay.Cross(DakPath.End, 100, 10, Color(255,0,0), true )
-			--debugoverlay.Cross(CurrentNode.Bottom, 10, 10, Color(0,0,255), true )
+local function CloseNode(Node)
+	Closed[Node] = Open[Node]
+	Open[Node]   = nil
+end
+
+local function OpenNode(Node, Score, G, Source)
+	Open[Node] = {
+		Score = Score,
+		G = G,
+		Source = Source
+	}
+end
+
+local function GetLowestNode()
+	local Min = math.huge
+	local Select
+
+	for Node, Data in pairs(Open) do
+		if Data.Score < Min then
+			Min = Data.Score
+			Select = Node
 		end
 	end
-	print(runs)
 
-	--some sort of backtracing attempt but then i realized that it's all one big line anyway that needs to be untangled
-	local Traced = false
-	local runs = 0
-	local key = GetNodeNoKey(End).Key
-	local waypoints = {}
-	while Traced == false and runs < 1000 do
-		waypoints[#waypoints+1] = Nodes[key].Bottom
-		debugoverlay.Cross(Nodes[key].Bottom, 10, 10, Color(0,0,255), true )
-		if key == GetNodeNoKey(Start).Key then
-			Traced = true
-		else
-			key = CameFrom[key]
+	return Select
+end
+
+function AStar(Start, End)
+	local StartNode = GetNodeFromVector(Start)
+	local EndNode   = GetNodeFromVector(End)
+
+	Closed = {}
+	Open = {
+		[StartNode] = {
+			G = 0,
+			Score = 0
+		}
+	}
+
+	local STARTTIME = SysTime()
+	local ENDTIME
+
+	while next(Open) do
+		local CurNode = GetLowestNode() -- Get lowest scoring node
+
+		CloseNode(CurNode) -- Close it
+
+		for _, Node in pairs(GetNeighbours(CurNode, EMPTYTABLE)) do -- For every neighbor
+			if Closed[Node] then continue end -- If it's closed, skip it
+			if Node == EndNode then -- If it's the target, then stop
+				Closed[Node] = {Source = CurNode}
+
+				ENDTIME = SysTime()
+				goto jump
+			else
+				local G = Node.Floor:Distance(CurNode.Floor) * 0.5
+
+				if Open[Node] then -- Already discovered
+					if Open[Node].G > G then -- But this route is quicker.... Update score and source
+						local H = Open[Node].Score - Open[Node].G
+
+						Open[Node].G      = G
+						Open[Node].Score  = H + G
+						Open[Node].Source = CurNode
+					end
+				else -- Newly discovered
+					local H = Node.Floor:Distance(End)
+
+					OpenNode(Node, G + H, G, CurNode)
+
+					debugoverlay.Cross(Node.Floor + Vector(0, 0, 5) + VectorRand() * 4, 5, 15, ColorRand(100, 255))
+				end
+			end
 		end
+	end
+
+	::jump::
+
+	if Closed[EndNode] then
+		print("Path found! Took " .. math.Round(ENDTIME - STARTTIME, 1) .. " seconds")
+
+		local Route   = {EndNode}
+		local CurNode = EndNode
+
+		while Closed[CurNode].Source do
+			Route[#Route + 1] = Closed[CurNode].Source
+			CurNode = Closed[CurNode].Source
+		end
+
+		for _, V in ipairs(Route) do
+			debugoverlay.Box(V.Floor, Vector(GridSize, GridSize, GridHeight) * -0.5, Vector(GridSize, GridSize, GridHeight) * 0.5, 15, Color(0, 255, 0))
+		end
+	else
+		print("No path found!")
 	end
 end
