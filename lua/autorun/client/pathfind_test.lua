@@ -300,7 +300,7 @@ end)
 
 concommand.Add("path_save", function()
 	if not(file.Exists( "dakpaths", "DATA" )) then file.CreateDir( "dakpaths" ) end
-	file.Write( "dakpaths/"..game.GetMap()..".txt", util.TableToJSON( DakPath.Paths ) )
+	file.Write( "dakpaths/"..game.GetMap()..".txt", util.Compress( util.TableToJSON( DakPath.Paths ) ) )
 	print("File Saved as: dakpaths/"..game.GetMap()..".txt")
 end)
 
