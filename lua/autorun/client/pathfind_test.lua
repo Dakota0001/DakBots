@@ -112,6 +112,7 @@ local function AddNode(Position)
 			Bottom     = Bottom,
 			Sides      = {},
 			SideCount  = 0,
+			Connections = {}
 		}
 
 		Nodes[Key] = Node
@@ -161,7 +162,7 @@ local function DrawNodes()
 
 				if not Node then continue end
 
-				render.DrawWireframeBox(Node.Center, NoAngle, -GridCube, GridCube, GridColor, true)
+				--render.DrawWireframeBox(Node.Center, NoAngle, -GridCube, GridCube, GridColor, true)
 				render.DrawWireframeSphere(Node.Floor, 10, 4, 4, StartColor, true)
 
 				if Node.SideCount == 0 then continue end
@@ -243,6 +244,8 @@ local function GetNeighbours(Node, Checked)
 
 					Current.SideCount = Current.SideCount + 1
 				end
+
+				Node.Connections[Current] = Distance
 
 				if not Checked[Key] then
 					Found[Key] = Current
@@ -536,15 +539,33 @@ concommand.Add("path_generate", function()
 end)
 
 
-local EMPTYTABLE = {}
-local Open, Closed
+local Open, Closed, Scores, ScoreCount
 
 local function CloseNode(Node)
 	Closed[Node] = Open[Node]
 	Open[Node]   = nil
+
+	Scores[ScoreCount] = nil
+	ScoreCount = ScoreCount - 1
 end
 
 local function OpenNode(Node, Score, G, Source)
+
+	if ScoreCount > 0 then
+		for I = ScoreCount + 1, 2, -1 do
+			if Score < Open[Scores[I - 1]].Score then
+				table.insert(Scores, I, Node)
+				goto jump
+			end
+		end
+	end
+
+	table.insert(Scores, Node)
+
+	::jump::
+
+	ScoreCount = ScoreCount + 1
+
 	Open[Node] = {
 		Score = Score,
 		G = G,
@@ -552,33 +573,20 @@ local function OpenNode(Node, Score, G, Source)
 	}
 end
 
--- TODO: Replace this
--- This could operate a lot faster if a table was sorted while inserted to so that the lowest cost node was the first/last item
--- If it's an array then it'd be fastest as the last item (no shuffling when removed)
 local function GetLowestNode()
-	local Min = math.huge
-	local Select
-
-	for Node, Data in pairs(Open) do
-		if Data.Score < Min then
-			Min = Data.Score
-			Select = Node
-		end
-	end
-
-	return Select
+	return Scores[ScoreCount]
 end
 
 function AStar(Start, End)
 	local StartNode = GetNodeFromVector(Start)
 	local EndNode   = GetNodeFromVector(End)
+
+	ScoreCount = 0
+	Scores = {}
 	Closed = {}
-	Open = {
-		[StartNode] = {
-			G = 0,
-			Score = 0
-		}
-	}
+	Open   = {}
+
+	OpenNode(StartNode, 0, 0, nil) -- Open with the starting node
 
 	local STARTTIME = SysTime()
 	local ENDTIME = SysTime()
@@ -589,40 +597,37 @@ function AStar(Start, End)
 
 		CloseNode(CurNode) -- Close it
 
-		for _, Node in pairs(GetNeighbours(CurNode, EMPTYTABLE)) do -- TODO: Properly pass the closed table to this so we don't iterate over closed items
+		if CurNode == EndNode then -- If it's the target, then stop
+			ENDTIME = SysTime()
+			break
+		end
+
+		for Node, Dist in pairs(CurNode.Connections) do -- Test new nodes
 			if Closed[Node] then continue end -- If it's closed, skip it
-			if Node == EndNode then -- If it's the target, then stop
-				Closed[Node] = {Source = CurNode}
 
-				ENDTIME = SysTime()
-				goto jump
-			else
-				local MoveCost = Node.Floor:Distance(CurNode.Floor) -- TODO: Expand upon this with things like inclination, elevation, etc.
-				local G = BaseG + MoveCost
+			local MoveCost = Dist -- TODO: Expand upon this with things like inclination, elevation, etc.
+			local G = BaseG + MoveCost
 
-				if Open[Node] then -- Already discovered
-					if Open[Node].G > G then -- But this route is quicker.... Update score and source
-						local H = Open[Node].Score - Open[Node].G
+			if Open[Node] then -- Already discovered
+				if Open[Node].G > G then -- But this route is quicker.... Update score and source
+					local H = Open[Node].Score - Open[Node].G
 
-						Open[Node].G      = G
-						Open[Node].Score  = H + G
-						Open[Node].Source = CurNode
-					end
-				else -- Newly discovered
-					local H = Node.Floor:Distance(End)
-
-					OpenNode(Node, G + H, G, CurNode)
-
-					--debugoverlay.Cross(Node.Floor + Vector(0, 0, 5) + VectorRand() * 4, 5, 15, ColorRand(100, 255))
+					Open[Node].G      = G
+					Open[Node].Score  = H + G
+					Open[Node].Source = CurNode
 				end
+			else -- Newly discovered
+				local H = Node.Floor:DistToSqr(End)
+
+				OpenNode(Node, G + H, G, CurNode)
+
+				--debugoverlay.Cross(Node.Floor + Vector(0, 0, 5) + VectorRand() * 4, 5, 15, ColorRand(100, 255))
 			end
 		end
 	end
 
-	::jump::
-
 	if Closed[EndNode] then
-		print("Path found! Took " .. math.Round(ENDTIME - STARTTIME, 1) .. " seconds")
+		print("Path found! Took " .. math.Round(ENDTIME - STARTTIME, 4) .. " seconds")
 
 		local Route   = {EndNode}
 		local CurNode = EndNode
@@ -631,10 +636,11 @@ function AStar(Start, End)
 			Route[#Route + 1] = Closed[CurNode].Source
 			CurNode = Closed[CurNode].Source
 		end
-		DakPath.Paths[#DakPath.Paths+1] = Route
-		--for _, V in ipairs(Route) do
-		--	debugoverlay.Box(V.Floor, Vector(GridSize, GridSize, GridHeight) * -0.5, Vector(GridSize, GridSize, GridHeight) * 0.5, 15, Color(0, 255, 0))
-		--end
+
+		--DakPath.Paths[#DakPath.Paths+1] = Route
+		for I, V in ipairs(Route) do
+			debugoverlay.Box(V.Floor, Vector(GridSize, GridSize, 2) * -0.5, Vector(GridSize, GridSize, 2) * 0.5, 15, HSVToColor(I * (360 / #Route), 1, 1))
+		end
 	else
 		print("No path found!")
 	end
