@@ -491,6 +491,9 @@ local function OpenNode(Node, Score, G, Source)
 	}
 end
 
+-- TODO: Replace this
+-- This could operate a lot faster if a table was sorted while inserted to so that the lowest cost node was the first/last item
+-- If it's an array then it'd be fastest as the last item (no shuffling when removed)
 local function GetLowestNode()
 	local Min = math.huge
 	local Select
@@ -522,10 +525,11 @@ function AStar(Start, End)
 
 	while next(Open) do
 		local CurNode = GetLowestNode() -- Get lowest scoring node
+		local BaseG   = Open[CurNode].G
 
 		CloseNode(CurNode) -- Close it
 
-		for _, Node in pairs(GetNeighbours(CurNode, EMPTYTABLE)) do -- For every neighbor
+		for _, Node in pairs(GetNeighbours(CurNode, EMPTYTABLE)) do -- TODO: Properly pass the closed table to this so we don't iterate over closed items
 			if Closed[Node] then continue end -- If it's closed, skip it
 			if Node == EndNode then -- If it's the target, then stop
 				Closed[Node] = {Source = CurNode}
@@ -533,7 +537,8 @@ function AStar(Start, End)
 				ENDTIME = SysTime()
 				goto jump
 			else
-				local G = Node.Floor:Distance(CurNode.Floor) * 0.5
+				local MoveCost = Node.Floor:Distance(CurNode.Floor) -- TODO: Expand upon this with things like inclination, elevation, etc.
+				local G = BaseG + MoveCost
 
 				if Open[Node] then -- Already discovered
 					if Open[Node].G > G then -- But this route is quicker.... Update score and source
