@@ -217,6 +217,7 @@ local function GetNeighbours(Node, Checked)
 				local Current  = AddNode(Position)
 
 				if not Current then continue end
+				if Current == Node then continue end
 				if not CanConnect(Node, Current) then
 					if Current.SideCount == 0 then
 						RemoveNode(Position)
@@ -538,110 +539,77 @@ concommand.Add("path_generate", function()
 	print("Total Nodes:", Total)
 end)
 
+local Open, gScore, fScore, parent
 
-local Open, Closed, Scores, ScoreCount
+-- TODO: Rewrite this!!
+-- If the nodes/scores were stored in an ordered list it would have O(1) cost, this is currently O(n)
+local function GetLowestNode()
+	local min = math.huge
+	local choice
 
-local function CloseNode(Node)
-	Closed[Node] = Open[Node]
-	Open[Node]   = nil
-
-	Scores[ScoreCount] = nil
-	ScoreCount = ScoreCount - 1
-end
-
-local function OpenNode(Node, Score, G, Source)
-
-	if ScoreCount > 0 then
-		for I = ScoreCount + 1, 2, -1 do
-			if Score < Open[Scores[I - 1]].Score then
-				table.insert(Scores, I, Node)
-				goto jump
-			end
+	for K in pairs(Open) do
+		if fScore[K] < min then
+			min    = fScore[K]
+			choice = K
 		end
 	end
 
-	table.insert(Scores, Node)
-
-	::jump::
-
-	ScoreCount = ScoreCount + 1
-
-	Open[Node] = {
-		Score = Score,
-		G = G,
-		Source = Source
-	}
-end
-
-local function GetLowestNode()
-	return Scores[ScoreCount]
+	return choice
 end
 
 function AStar(Start, End)
 	local StartNode = GetNodeFromVector(Start)
 	local EndNode   = GetNodeFromVector(End)
+	local Found
 
-	ScoreCount = 0
-	Scores = {}
-	Closed = {}
-	Open   = {}
+	Open   = {[StartNode] = true}
+	gScore = {[StartNode] = 0}
+	fScore = {[StartNode] = StartNode.Floor:DistToSqr(End)}
+	parent = {}
 
-	OpenNode(StartNode, 0, 0, nil) -- Open with the starting node
-
+	local ENDTIME
 	local STARTTIME = SysTime()
-	local ENDTIME = SysTime()
 
 	while next(Open) do
-		local CurNode = GetLowestNode() -- Get lowest scoring node
-		local BaseG   = Open[CurNode].G
+		local CurNode = GetLowestNode()
+		local BaseG   = gScore[CurNode]
 
-		CloseNode(CurNode) -- Close it
+		Open[CurNode] = nil
 
-		if CurNode == EndNode then -- If it's the target, then stop
+		if CurNode == EndNode then
+			Found = true
 			ENDTIME = SysTime()
 			break
 		end
 
-		for Node, Dist in pairs(CurNode.Connections) do -- Test new nodes
-			if Closed[Node] then continue end -- If it's closed, skip it
+		for Node, Dist in pairs(CurNode.Connections) do
+			local G = BaseG + Dist * 50 -- Turning up the G cost will provide a more optimal path but may take longer to calculate
 
-			local MoveCost = Dist -- TODO: Expand upon this with things like inclination, elevation, etc.
-			local G = BaseG + MoveCost
+			if not gScore[Node] or G < gScore[Node] then -- Undiscovered node or the path to this node from the current is the fastest
+				parent[Node] = CurNode
+				gScore[Node] = G
+				fScore[Node] = G + Node.Floor:DistToSqr(End)
 
-			if Open[Node] then -- Already discovered
-				if Open[Node].G > G then -- But this route is quicker.... Update score and source
-					local H = Open[Node].Score - Open[Node].G
-
-					Open[Node].G      = G
-					Open[Node].Score  = H + G
-					Open[Node].Source = CurNode
-				end
-			else -- Newly discovered
-				local H = Node.Floor:DistToSqr(End)
-
-				OpenNode(Node, G + H, G, CurNode)
-
-				--debugoverlay.Cross(Node.Floor + Vector(0, 0, 5) + VectorRand() * 4, 5, 15, ColorRand(100, 255))
+				Open[Node] = true
+				debugoverlay.Cross(Node.Floor + Vector(0, 0, 5) + VectorRand() * 5, 5, 30, ColorRand(100, 255))
 			end
 		end
 	end
 
-	if Closed[EndNode] then
-		print("Path found! Took " .. math.Round(ENDTIME - STARTTIME, 4) .. " seconds")
+	if Found then
+		print("Found! Took " .. math.Round(ENDTIME - STARTTIME, 4) .. " seconds")
 
-		local Route   = {EndNode}
 		local CurNode = EndNode
+		local Route   = {}
 
-		while Closed[CurNode].Source do
-			Route[#Route + 1] = Closed[CurNode].Source
-			CurNode = Closed[CurNode].Source
+		while parent[CurNode] do
+			Route[#Route + 1] = parent[CurNode]
+
+			CurNode = parent[CurNode]
 		end
 
-		--DakPath.Paths[#DakPath.Paths+1] = Route
 		for I, V in ipairs(Route) do
-			debugoverlay.Box(V.Floor, Vector(GridSize, GridSize, 2) * -0.5, Vector(GridSize, GridSize, 2) * 0.5, 15, HSVToColor(I * (360 / #Route), 1, 1))
+			debugoverlay.Box(V.Floor, Vector(GridSize, GridSize, 2) * -0.5, Vector(GridSize, GridSize, 2) * 0.5, 30, HSVToColor(I * (360 / #Route), 1, 1))
 		end
-	else
-		print("No path found!")
 	end
 end
