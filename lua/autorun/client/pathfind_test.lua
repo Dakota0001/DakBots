@@ -308,6 +308,15 @@ concommand.Add("path_save", function()
 	print("File Saved as: dakpaths/"..game.GetMap()..".txt")
 end)
 
+concommand.Add("path_load", function()
+	if file.Exists( "dakpaths/"..game.GetMap()..".txt", "DATA" ) then
+		DakPath.Paths = util.JSONToTable(util.Decompress(file.Read( "dakpaths/"..game.GetMap()..".txt", "DATA" )))
+		print("Path file loaded")
+	else
+		print("No path file found")
+	end
+end)
+
 concommand.Add("path_clear", function()
 	DakPath.Paths = {}
 	print("Path list purged.")

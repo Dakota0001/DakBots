@@ -162,66 +162,36 @@ function ENT:FormSquad()
 end
 
 function ENT:Pathfind()
-	if file.Exists( "daktankmappaths/"..game.GetMap()..".txt", "DATA" ) then
-		if not(GLOBALmapnodes) then
-			local Nodes = string.Split( file.Read( "daktankmappaths/"..game.GetMap()..".txt", "DATA" ) , "|" )
-			GLOBALmapnodes = {} 
-			for i = 1, #Nodes do
-				if #Nodes[i] > 0 then
-					local Nodesplit = string.Split( Nodes[i] , "," )
-					local newnode = {tonumber(Nodesplit[1]),Vector(tonumber(Nodesplit[2]),tonumber(Nodesplit[3]),tonumber(Nodesplit[4]))}
-					if #Nodesplit > 4 then
-						local links = {}
-						for j = 1, #Nodesplit do
-							if j > 4 then
-								links[#links+1] = tonumber(Nodesplit[j])
-							end
-						end
-						newnode[3] = links
-					end
-					GLOBALmapnodes[#GLOBALmapnodes+1] = newnode
-				end
-			end
-		end
-	end
-
 	if self.Leader == self or not(IsValid(self.Leader)) or self.Leader.Following==1 then
-		if GLOBALmapnodes then
-			local Dist = 10000000000000000
-			local SelfPos = self:GetPos()
-			local TarPos = Vector()
-			local DistanceBetween = Vector()
-			local Target = nil
-			for i = 1, #GLOBALmapnodes do
-				TarPos = GLOBALmapnodes[i][2]
-				DistanceBetween = SelfPos:Distance(TarPos)
-				if Dist > DistanceBetween then
-					Dist = DistanceBetween
-					Target = GLOBALmapnodes[i]
+		if file.Exists( "dakpaths/"..game.GetMap()..".txt", "DATA" ) then
+			if self.Paths == nil then self.Paths = util.JSONToTable(util.Decompress(file.Read( "dakpaths/"..game.GetMap()..".txt", "DATA" ))) end
+			--In gamemode hold a table of capture points gained by running a find once for all capture point ents then pick one that is neutral first and if no neutral then an enemy one then return vector as goal
+			local VecTable = {
+				Vector(9097.475586, -11095.366211, 3648.031250),
+				Vector(6137.738281, 1248.062622, 2719.822266),
+				Vector(10387.305664, 9959.908203, 3368.031250),
+				Vector(30.444704, 8613.874023, 2368.031250),
+				Vector(1834.775024, -1075.389526, 2270.761230),
+				Vector(-10111.933594, -10227.226563, 3368.031250),
+				Vector(-5272.229492, 2796.873291, 2737.434570),
+				Vector(-11754.385742, 10937.160156, 4147.003906) --had to be changed
+			}
+			local pickedvec = VecTable[math.random(1,#VecTable)]
+			local TargetPaths = {}
+			for i=1, #self.Paths do
+				if pickedvec:Distance(self.Paths[i][#self.Paths[i]].Center) < 100 then
+					TargetPaths[#TargetPaths+1] = self.Paths[i]
 				end
 			end
-			if SelfPos:Distance(Target[2]) < 100 then
-				self.OnNode = 1
-				local SelfPos2 = self.FinalGoal
-				local TarPos2 = Vector()
-				local ValidNodes = {}
-				for i = 1, #Target[3] do
-					TarPos2 = GLOBALmapnodes[Target[3][i]][2]
-					if not(self.OldNode == GLOBALmapnodes[Target[3][i]][1]) then
-						ValidNodes[#ValidNodes+1] = GLOBALmapnodes[Target[3][i]]
-					end
+			local ShortestDist = math.huge
+			self.pickedpath = {self:GetPos()}
+			for i=1, #TargetPaths do
+				if self:GetPos():Distance(TargetPaths[i][1].Center) < ShortestDist then
+					ShortestDist = self:GetPos():Distance(TargetPaths[i][1].Center)
+					self.pickedpath = table.Copy(TargetPaths[i])
 				end
-				if #ValidNodes==0 then
-					self.Dest = GLOBALmapnodes[self.OldNode][2]
-					self.OldNode = Target[1]
-				else
-					self.OldNode = Target[1]
-					self.Dest = ValidNodes[math.random(#ValidNodes)][2]
-				end
-			else
-				self.OnNode = 0
-				self.Dest = Target[2]
 			end
+			self.Dest = self.pickedpath[1].Center
 		else
 			self.Dest = self:GetPos() + Vector(math.Rand(-1000000,1000000),math.Rand(-1000000,1000000),0)
 		end
@@ -430,6 +400,11 @@ function ENT:FindCloseEnemy(pos)
 end
 
 function ENT:MoveToPos( options )
+
+	--add in some sort of jump ability, would need to detect if there is something infront of current step segment up to jump height but not above then jump over it
+	--also would need to know if it is trying to jump into a new area in which it would fall to get to it
+	--may also need to do this in the movetopos combat function and chase enemy and other relevant movement functions
+
 	if self:GetClass() == "sstrp_chariot" then
 		if CurTime() - self.StepTime > self.StepDelay then
 			self:EmitSound( self.StepSounds[math.random(#self.StepSounds)], 100, 100, 0.2, 6 )
@@ -1041,7 +1016,7 @@ function ENT:Think()
 							end)
 						end
 					end
-					if self.commander then
+					if self.commander~=nil then
 						self.Dest = self.commander:GetPos()
 						if self:GetPos():Distance(self.Dest) > 200 then
 							self.shouldmove = 1
@@ -1305,7 +1280,7 @@ function ENT:RunBehaviour()
 			end
 		end
 		if GetConVarNumber("ai_disabled")==0 then
-			if ( self:GetEnemy() ) then
+			if ( self:GetEnemy() ) and false then
 				self:SetSequence(self.CombatIdleAnimation)
 				if CurTime() - self.StuckTimer > 0.5 and IsValid(self:GetEnemy()) then
 					local dist = self:GetEnemy():GetPos():Distance(self:GetPos())
@@ -1614,6 +1589,7 @@ function ENT:RunBehaviour()
 				end
 			else
 				if CurTime() - self.StuckTimer > 0.5 then
+					if self.Dest == nil then self.Dest = self:GetPos() end
 					self.loco:FaceTowards( self.Dest )
 					if self.commander then
 						if self.shouldmove == 1 then
@@ -1623,10 +1599,19 @@ function ENT:RunBehaviour()
 						end
 					else
 						if self.Stationary == false then
+							if self.pickedpath==nil then self.pickedpath = {} end
+							if #self.pickedpath == 0 then
+								--check if goal capture point is captured by their team first then pathfind to next area if so
+								self:Pathfind()
+							end
 							if self:GetPos():Distance(self.Dest) > 100 then
 								self:MoveToPos()
 							else
-								self:Pathfind()
+								table.remove( self.pickedpath, 1 )
+								if self.pickedpath[1] ~= nil then
+									self.Dest = self.pickedpath[1].Center
+								end
+								self:MoveToPos()
 							end
 						else
 							self:SetSequence(self.IdleAnimation)
