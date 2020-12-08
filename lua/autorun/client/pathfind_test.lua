@@ -266,6 +266,8 @@ concommand.Add("path_run_astar", function()
 end)
 
 concommand.Add("path_make_all_paths", function()
+	--gm_emp_cyclopean
+	--[[
 	local VecTable = {
 		Vector(9097.475586, -11095.366211, 3648.031250),
 		Vector(6137.738281, 1248.062622, 2719.822266),
@@ -275,6 +277,20 @@ concommand.Add("path_make_all_paths", function()
 		Vector(-10111.933594, -10227.226563, 3368.031250),
 		Vector(-5272.229492, 2796.873291, 2737.434570),
 		Vector(-11754.385742, 10937.160156, 4147.003906) --had to be changed
+	}
+	]]--
+
+	--gm_emp_canyon
+	local VecTable = {
+		Vector(11469.577148438, -6255.041015625, 20.59476852417),
+		Vector(8473.134765625, 325.95901489258, 520.21319580078),
+		Vector(8803.6962890625, 5931.8852539063, 0.47704315185547),
+		Vector(11827.244140625, 10962.939453125, 18.160446166992),
+		Vector(1796.6341552734, 6945.3681640625, 15.336364746094),
+		Vector(747.47930908203, 214.9630279541, 32.358711242676),
+		Vector(-8750.994140625, 2618.8464355469, 16.548538208008),
+		Vector(-7314.5634765625, 11391.150390625, 25.019695281982),
+		Vector(-6729.2905273438, -4935.2368164063, 19.781524658203)
 	}
 	local Fine = true
 	local Broke = {}
@@ -592,7 +608,7 @@ function AStar(Start, End)
 		end
 
 		for Node, Dist in pairs(CurNode.Connections) do
-			local G = BaseG + Dist * 50 -- Turning up the G cost will provide a more optimal path but may take longer to calculate
+			local G = BaseG + Dist * 10000 -- Turning up the G cost will provide a more optimal path but may take longer to calculate
 
 			if not gScore[Node] or G < gScore[Node] then -- Undiscovered node or the path to this node from the current is the fastest
 				parent[Node] = CurNode
@@ -620,5 +636,6 @@ function AStar(Start, End)
 		for I, V in ipairs(Route) do
 			debugoverlay.Box(V.Floor, Vector(GridSize, GridSize, 2) * -0.5, Vector(GridSize, GridSize, 2) * 0.5, 30, HSVToColor(I * (360 / #Route), 1, 1))
 		end
+		DakPath.Paths[#DakPath.Paths+1] = Route
 	end
 end

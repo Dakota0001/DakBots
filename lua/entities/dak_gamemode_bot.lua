@@ -290,20 +290,20 @@ function ENT:Initialize()
  				self.DakTeam = 1
  			end
 			--self.DakTeam = math.random(1,2)
+			if self.DakTeam == 1 then
+	 			GLOBALreddaktroopers[#GLOBALreddaktroopers+1] = self
+	 			self:SetModel( "models/Combine_Soldier.mdl" )
+	 			--self:SetColor(Color(255,0,0,255))
+	 			self:SetSkin( 1 )
+	 		end
+	 		if self.DakTeam == 2 then
+	 			GLOBALbluedaktroopers[#GLOBALbluedaktroopers+1] = self
+	 			self:SetModel( "models/Combine_Super_Soldier.mdl" )
+	 			--self:SetColor(Color(0,0,255,255))
+	 			--self:SetSkin( 0 )
+	 		end
 		end
- 		if self.DakTeam == 1 then
- 			GLOBALreddaktroopers[#GLOBALreddaktroopers+1] = self
- 			self:SetModel( "models/Combine_Soldier.mdl" )
- 			--self:SetColor(Color(255,0,0,255))
- 			self:SetSkin( 1 )
- 		end
- 		if self.DakTeam == 2 then
- 			GLOBALbluedaktroopers[#GLOBALbluedaktroopers+1] = self
- 			self:SetModel( "models/Combine_Super_Soldier.mdl" )
- 			--self:SetColor(Color(0,0,255,255))
- 			--self:SetSkin( 0 )
- 		end
-
+ 		--[[
 		local enemy = ents.FindByClass( "npc_*" ) --Find any spawned entity in map with class beginning at npc
 		if IsValid(self.NPCTarget1) then
 			for _, x in pairs( enemy ) do --for every found entity do
@@ -317,6 +317,7 @@ function ENT:Initialize()
 				end
 			end
 		end
+		]]--
 
 		self:SetHealth(100*self.HealthMult)
 		if not IsValid(self.Weapon) then

@@ -166,17 +166,29 @@ function ENT:Pathfind()
 		if file.Exists( "dakpaths/"..game.GetMap()..".txt", "DATA" ) then
 			if self.Paths == nil then self.Paths = util.JSONToTable(util.Decompress(file.Read( "dakpaths/"..game.GetMap()..".txt", "DATA" ))) end
 			--In gamemode hold a table of capture points gained by running a find once for all capture point ents then pick one that is neutral first and if no neutral then an enemy one then return vector as goal
-			local VecTable = {
-				Vector(9097.475586, -11095.366211, 3648.031250),
-				Vector(6137.738281, 1248.062622, 2719.822266),
-				Vector(10387.305664, 9959.908203, 3368.031250),
-				Vector(30.444704, 8613.874023, 2368.031250),
-				Vector(1834.775024, -1075.389526, 2270.761230),
-				Vector(-10111.933594, -10227.226563, 3368.031250),
-				Vector(-5272.229492, 2796.873291, 2737.434570),
-				Vector(-11754.385742, 10937.160156, 4147.003906) --had to be changed
-			}
-			local pickedvec = VecTable[math.random(1,#VecTable)]
+			if self.caps == nil then self.caps = ents.FindByClass("daktank_cap") end
+			local GoalCaps = {}
+			local NeutralCaps = {}
+			for i=1, #self.caps do
+				if self.DakTeam ~= self.caps[i]:GetCapTeam() then
+					if self.caps[i]:GetCapTeam() == 0 then
+						NeutralCaps[#NeutralCaps+1] = self.caps[i]
+					end
+					GoalCaps[#GoalCaps+1] = self.caps[i]
+				end
+			end
+			local CapTable = {}
+			if #NeutralCaps > 0 then
+				for i=1, #NeutralCaps do
+					CapTable[#CapTable+1] = NeutralCaps[i]
+				end
+			else
+				for i=1, #GoalCaps do
+					CapTable[#CapTable+1] = GoalCaps[i]
+				end
+			end
+			self.pickedcap = CapTable[math.random(1,#CapTable)]
+			local pickedvec = CapTable[math.random(1,#CapTable)]:GetPos()
 			local TargetPaths = {}
 			for i=1, #self.Paths do
 				if pickedvec:Distance(self.Paths[i][#self.Paths[i]].Center) < 100 then
@@ -191,6 +203,7 @@ function ENT:Pathfind()
 					self.pickedpath = table.Copy(TargetPaths[i])
 				end
 			end
+			--PrintTable(self.pickedpath)
 			self.Dest = self.pickedpath[1].Center
 		else
 			self.Dest = self:GetPos() + Vector(math.Rand(-1000000,1000000),math.Rand(-1000000,1000000),0)
@@ -739,7 +752,9 @@ function ENT:OnInjured( info )
 	end
 	self.LastFind = CurTime()
 end
-util.AddNetworkString( "daktankshotfired" )
+if SERVER then
+	util.AddNetworkString( "daktankshotfired" )
+end
 function ENT:FireShell()
 	if IsValid(self:GetEnemy()) then
 		self:FaceTowardsAndWait( self:GetEnemy():GetPos()+self:GetEnemy():OBBCenter() )
@@ -1280,7 +1295,7 @@ function ENT:RunBehaviour()
 			end
 		end
 		if GetConVarNumber("ai_disabled")==0 then
-			if ( self:GetEnemy() ) and false then
+			if ( self:GetEnemy() ) then
 				self:SetSequence(self.CombatIdleAnimation)
 				if CurTime() - self.StuckTimer > 0.5 and IsValid(self:GetEnemy()) then
 					local dist = self:GetEnemy():GetPos():Distance(self:GetPos())
@@ -1602,16 +1617,21 @@ function ENT:RunBehaviour()
 							if self.pickedpath==nil then self.pickedpath = {} end
 							if #self.pickedpath == 0 then
 								--check if goal capture point is captured by their team first then pathfind to next area if so
-								self:Pathfind()
-							end
-							if self:GetPos():Distance(self.Dest) > 100 then
-								self:MoveToPos()
-							else
-								table.remove( self.pickedpath, 1 )
-								if self.pickedpath[1] ~= nil then
-									self.Dest = self.pickedpath[1].Center
+								if self.pickedcap == nil then self:Pathfind() end
+								if self.DakTeam == self.pickedcap:GetCapTeam() then
+									self:Pathfind()
 								end
-								self:MoveToPos()
+							end
+							if self.Dest ~= nil then --i don't know how it happens but it does
+								if self:GetPos():Distance(self.Dest) > 100 then
+									self:MoveToPos()
+								else
+									table.remove( self.pickedpath, 1 )
+									if self.pickedpath[1] ~= nil then
+										self.Dest = self.pickedpath[1].Center
+									end
+									self:MoveToPos()
+								end
 							end
 						else
 							self:SetSequence(self.IdleAnimation)
