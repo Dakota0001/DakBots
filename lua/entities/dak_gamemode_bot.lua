@@ -80,19 +80,44 @@ function ENT:Initialize()
 			self.shootrange = 1500
 
 			self.DakTrail = "daktemissiletracer"
-			self.DakCaliber = 84
-			self.DakShellType = "HEATFS"
+
 			self.DakPenLossPerMeter = 0
 			self.DakExplosive = true
 			self.ShellLengthMult = 1
-			self.DakVelocity = 7500
 			self.ShootVehicles = true
+
+			if self.Era == "WWII" then --bazooka
+				self.DakVelocity = 3189
+				self.DakCaliber = 60
+				self.DakShellType = "HEAT"
+				self.HeatPen = 102
+				self.IsTandem = false
+			elseif "Cold War" then --AT4
+				self.DakVelocity = 11400
+				self.DakCaliber = 84
+				self.DakShellType = "HEAT"
+				self.HeatPen = 420
+				self.IsTandem = false
+			elseif "Modern" then --RPG28
+				self.DakVelocity = 9828
+				self.DakCaliber = 125
+				self.DakShellType = "HEATFS"
+				self.HeatPen = 1000
+				self.IsTandem = true
+			else
+				self.DakVelocity = 7500
+				self.DakCaliber = 84
+				self.DakShellType = "HEAT"
+				self.HeatPen = 100
+				self.IsTandem = false
+			end
 
 			self.CrouchingHitChance = 100
 			self.StandingHitChance = 100
 			self.RunningBurstHitChance = 100
 			self.RunningFullAutoHitChance = 100
 		end
+		--[[
 		if self.BotType == 7 then --Shotgun
 			self.HealthMult = 1
 			self.ShotCount = 10
@@ -103,7 +128,7 @@ function ENT:Initialize()
 			self.MagSize = 5
 			self.ReloadTime = 2
 
-			self.PrimaryCooldown = 0.2
+			self.PrimaryCooldown = 0.5
 			self.BurstMin = 1
 			self.BurstMax = 3
 
@@ -123,6 +148,7 @@ function ENT:Initialize()
 			self.RunningBurstHitChance = 100
 			self.RunningFullAutoHitChance = 100
 		end
+		--]]
 		--[[
 		if self.BotType == 6 then --Sniper
 			self.HealthMult = 1
@@ -231,7 +257,7 @@ function ENT:Initialize()
 		------------------------------------------
 		-----------------EDIT END-----------------
 		------------------------------------------
-		self:SetModel( "models/Combine_Soldier.mdl" )
+		--self:SetModel( "models/Combine_Soldier.mdl" )
 
 		self.SpeedMult = self.SpeedMult * 1
 		self.HealthMult = self.HealthMult * 1

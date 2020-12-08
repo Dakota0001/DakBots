@@ -1,0 +1,7 @@
+"sb"
+{
+	"base"	"sandbox"
+	"title"	"DakTank Combat 2"
+	"maps"		"^gm_|^gmod_|^phys_"
+	"menusystem"	"1"
+}

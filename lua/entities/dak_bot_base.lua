@@ -163,15 +163,14 @@ end
 
 function ENT:Pathfind()
 	if self.Leader == self or not(IsValid(self.Leader)) or self.Leader.Following==1 then
-		if file.Exists( "dakpaths/"..game.GetMap()..".txt", "DATA" ) then
-			if self.Paths == nil then self.Paths = util.JSONToTable(util.Decompress(file.Read( "dakpaths/"..game.GetMap()..".txt", "DATA" ))) end
+		if self.Paths ~= nil then
 			--In gamemode hold a table of capture points gained by running a find once for all capture point ents then pick one that is neutral first and if no neutral then an enemy one then return vector as goal
 			if self.caps == nil then self.caps = ents.FindByClass("daktank_cap") end
 			local GoalCaps = {}
 			local NeutralCaps = {}
 			for i=1, #self.caps do
-				if self.DakTeam ~= self.caps[i]:GetCapTeam() then
-					if self.caps[i]:GetCapTeam() == 0 then
+				if self.DakTeam ~= self.caps[i].DakTeam then
+					if self.caps[i].DakTeam == 0 then
 						NeutralCaps[#NeutralCaps+1] = self.caps[i]
 					end
 					GoalCaps[#GoalCaps+1] = self.caps[i]
@@ -188,19 +187,27 @@ function ENT:Pathfind()
 				end
 			end
 			self.pickedcap = CapTable[math.random(1,#CapTable)]
-			local pickedvec = CapTable[math.random(1,#CapTable)]:GetPos()
+			local pickedvec = self.pickedcap:GetPos()
 			local TargetPaths = {}
-			for i=1, #self.Paths do
-				if pickedvec:Distance(self.Paths[i][#self.Paths[i]].Center) < 100 then
-					TargetPaths[#TargetPaths+1] = self.Paths[i]
+			if #CapTable > 0 then
+				for i=1, #self.Paths do
+					if #self.Paths[i] > 0 then
+						if pickedvec:Distance(self.Paths[i][#self.Paths[i]].Center) < 100 then
+							TargetPaths[#TargetPaths+1] = self.Paths[i]
+						end
+					end
 				end
 			end
 			local ShortestDist = math.huge
 			self.pickedpath = {self:GetPos()}
-			for i=1, #TargetPaths do
-				if self:GetPos():Distance(TargetPaths[i][1].Center) < ShortestDist then
-					ShortestDist = self:GetPos():Distance(TargetPaths[i][1].Center)
-					self.pickedpath = table.Copy(TargetPaths[i])
+			if #TargetPaths > 0 then
+				for i=1, #TargetPaths do
+					if #TargetPaths[i] > 0 then
+						if self:GetPos():Distance(TargetPaths[i][1].Center) < ShortestDist then
+							ShortestDist = self:GetPos():Distance(TargetPaths[i][1].Center)
+							self.pickedpath = table.Copy(TargetPaths[i])
+						end
+					end
 				end
 			end
 			--PrintTable(self.pickedpath)
@@ -261,9 +268,9 @@ function ENT:FindEnemy()
     for _, V in pairs(ents.FindInPVS(Origin)) do
     	local ValidTarget = false
     	if self.AttackPlayers == true then
-    		ValidTarget = not(V:IsFlagSet(FL_FROZEN)) and IsValid(V) and V.BugNoTrack ~= 1 and (V:IsNPC() or (V:IsPlayer() and V.DakTeam ~= self.DakTeam) or V.Bug or (V.DakTeam~=nil and V.DakTeam ~= self.DakTeam)) and V:Health()>0
+    		ValidTarget = not(V:IsFlagSet(FL_FROZEN)) and IsValid(V) and V.BugNoTrack ~= 1 and (V:IsNPC() or (V:IsPlayer() and V.DakTeam ~= self.DakTeam) or V.Bug or (V.DakTeam~=nil and V.DakTeam ~= self.DakTeam)) and V:Health()>0 and self:GetPos():Distance(V:GetPos()) < 5000
     	else
-    		ValidTarget = not(V:IsFlagSet(FL_FROZEN)) and IsValid(V) and V.BugNoTrack ~= 1 and (V:IsNPC() or V.Bug or (V.DakTeam~=nil and V.DakTeam ~= self.DakTeam)) and V:Health()>0 and not(V:IsPlayer())
+    		ValidTarget = not(V:IsFlagSet(FL_FROZEN)) and IsValid(V) and V.BugNoTrack ~= 1 and (V:IsNPC() or V.Bug or (V.DakTeam~=nil and V.DakTeam ~= self.DakTeam)) and V:Health()>0 and not(V:IsPlayer()) and self:GetPos():Distance(V:GetPos()) < 5000
     	end
         if ValidTarget then
 	        local SightTrace = {}
@@ -747,9 +754,9 @@ function ENT:FireMelee(damage)
 end
 
 function ENT:OnInjured( info )
-	if info:GetAttacker():GetClass()~=self:GetClass() then
-		self.NextTarget = info:GetAttacker()
-	end
+	--if info:GetAttacker():GetClass()~=self:GetClass() then
+	--	self.NextTarget = info:GetAttacker()
+	--end
 	self.LastFind = CurTime()
 end
 if SERVER then
@@ -803,7 +810,7 @@ function ENT:FireShell()
 			local Ang
 			local V = self.DakVelocity
 			local G=math.abs(physenv.GetGravity().z)
-			for i=1, 10 do
+			for i=1, 2 do
 				Diff = EnemyPos - SelfPos
 				X = (Diff*Vector(1,1,0)):Length()
 				Y = Diff.z * 0.018975
@@ -820,7 +827,7 @@ function ENT:FireShell()
 			    FriendlyTrace.Mins = Vector(-5,-5,-5)
 				FriendlyTrace.Maxs = Vector(5,5,5)
 		    local CheckFire = util.TraceHull( FriendlyTrace )
-		    if CheckFire.Entity then
+		    if CheckFire.Entity~= nil then
 		    	if CheckFire.Entity.DakTeam == self.DakTeam or (CheckFire.Entity:IsPlayer() and self.AttackPlayers==false) then
 		    		self.NoFire = 1
 		    	else
@@ -853,22 +860,24 @@ function ENT:FireShell()
 						shell.Filter = {self}
 						shell.LifeTime = 0
 						shell.Gravity = 0
-						shell.DakFragPen = (self.DakCaliber/2.5)	
+						shell.DakFragPen = (self.DakCaliber/2.5)
 
 						if shell.DakShellType == "HEAT" then
-							shell.DakPenetration = (self.DakCaliber*1.20)
-							shell.DakBasePenetration = (self.DakCaliber*1.20)
+							shell.DakPenetration = self.HeatPen
+							shell.DakBasePenetration = self.HeatPen
+							shell.IsTandem = self.IsTandem
 						end
 						if shell.DakShellType == "HEATFS" then
-							shell.DakPenetration = (self.DakCaliber*5.40)
-							shell.DakBasePenetration = (self.DakCaliber*5.40)
+							shell.DakPenetration = self.HeatPen
+							shell.DakBasePenetration = self.HeatPen
+							shell.IsTandem = self.IsTandem
 						end
 						DakTankShellList[#DakTankShellList+1] = shell
 					end
 					self.PrimaryLastFire = CurTime()
 					local effectdata = EffectData()
 					--effectdata:SetOrigin( self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos+((self:GetEnemy():GetPos()+Vector(0,0,self:GetEnemy():OBBCenter().z))-self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos):GetNormalized()*25 )
-					effectdata:SetOrigin( self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos )
+					effectdata:SetOrigin( self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos + ((self:GetEnemy():GetPos()+Vector(0,0,self:GetEnemy():OBBCenter().z))-self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos):GetNormalized()*20 )
 					effectdata:SetAngles( ((self:GetEnemy():GetPos()+Vector(0,0,self:GetEnemy():OBBCenter().z))-self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos):Angle() )
 					effectdata:SetEntity(self)
 					effectdata:SetScale( 0.1 )
@@ -1615,15 +1624,15 @@ function ENT:RunBehaviour()
 					else
 						if self.Stationary == false then
 							if self.pickedpath==nil then self.pickedpath = {} end
+							if self.pickedcap == nil then self:Pathfind() end
 							if #self.pickedpath == 0 then
 								--check if goal capture point is captured by their team first then pathfind to next area if so
-								if self.pickedcap == nil then self:Pathfind() end
-								if self.DakTeam == self.pickedcap:GetCapTeam() then
+								if self.DakTeam == self.pickedcap.DakTeam then
 									self:Pathfind()
 								end
 							end
 							if self.Dest ~= nil then --i don't know how it happens but it does
-								if self:GetPos():Distance(self.Dest) > 100 then
+								if (self:GetPos()*Vector(1,1,0)):Distance((self.Dest*Vector(1,1,0))) > 300 then
 									self:MoveToPos()
 								else
 									table.remove( self.pickedpath, 1 )
