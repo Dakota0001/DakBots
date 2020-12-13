@@ -4,142 +4,143 @@ ENT.Base 	  = "base_nextbot"
 ENT.Spawnable = true
 
 do -- Sounds
+	local Alert = {
+		"npc/metropolice/vo/allunitsmovein.wav",
+		"npc/combine_soldier/vo/movein.wav",
+		"npc/combine_soldier/vo/prepforcontact.wav",
+		"npc/combine_soldier/vo/contactconfim.wav",
+		"npc/combine_soldier/vo/contact.wav",
+		"npc/combine_soldier/vo/engaging.wav",
+		"npc/combine_soldier/vo/sectorisnotsecure.wav",
+		"npc/metropolice/vo/thereheis.wav",
+		"npc/combine_soldier/vo/readyweaponshostilesinbound.wav",
+		"npc/combine_soldier/vo/weaponsoffsafeprepforcontact.wav"
+	}
+	local Reload = {
+		"npc/metropolice/vo/backmeupimout.wav",
+		"npc/combine_soldier/vo/coverme.wav"
+	}
+	local Hurt = {
+		"npc/metropolice/pain1.wav",
+		"npc/metropolice/pain2.wav",
+		"npc/metropolice/pain3.wav",
+		"npc/metropolice/pain4.wav"
+	}
+	local Grenade = {
+		"npc/metropolice/vo/grenade.wav",
+		"npc/metropolice/vo/thatsagrenade.wav"
+	}
+	local Follow = {
+		"npc/combine_soldier/vo/affirmative.wav",
+		"npc/combine_soldier/vo/affirmative2.wav",
+		"npc/combine_soldier/vo/copy.wav",
+		"npc/combine_soldier/vo/copythat.wav",
+		"npc/combine_soldier/vo/cover.wav",
+		"npc/metropolice/vo/rodgerthat.wav"
+	}
+	local EngagingHealthy = {
+		"npc/combine_soldier/vo/suppressing.wav",
+		"npc/combine_soldier/vo/hardenthatposition.wav",
+		"npc/combine_soldier/vo/movein.wav",
+		"npc/metropolice/vo/destroythatcover.wav",
+		"npc/combine_soldier/vo/heavyresistance.wav",
+		"npc/metropolice/takedown.wav",
+		"npc/metropolice/vo/covermegoingin.wav",
+		"npc/metropolice/vo/minorhitscontinuing.wav",
+		"npc/metropolice/vo/moveit.wav",
+		"npc/combine_soldier/vo/gosharpgosharp.wav",
+		"npc/combine_soldier/vo/sweepingin.wav",
+		"npc/combine_soldier/vo/targetcompromisedmovein.wav",
+		"npc/combine_soldier/vo/onedown.wav"
+	}
+	local EngagingWounded = {
+		"npc/metropolice/vo/11-99officerneedsassistance.wav",
+		"npc/metropolice/vo/officerneedshelp.wav",
+		"npc/metropolice/vo/officerunderfiretakingcover.wav",
+		"npc/metropolice/vo/getdown.wav",
+		"npc/metropolice/vo/help.wav",
+		"npc/metropolice/vo/lookout.wav",
+		"npc/metropolice/vo/movingtocover.wav",
+		"npc/metropolice/vo/takecover.wav",
+		"npc/metropolice/vo/watchit.wav",
+		"npc/combine_soldier/vo/coverhurt.wav",
+		"npc/metropolice/takedown.wav",
+		"npc/combine_soldier/vo/heavyresistance.wav",
+		"npc/combine_soldier/vo/requestmedical.wav",
+		"npc/combine_soldier/vo/onedown.wav"
+	}
+	local AllClear = {
+		"npc/combine_soldier/vo/reportingclear.wav",
+		"npc/combine_soldier/vo/sightlineisclear.wav",
+		"npc/combine_soldier/vo/sectorissecurenovison.wav"
+	}
+	local Affirm = {
+		"npc/metropolice/vo/affirmative.wav",
+		"npc/metropolice/vo/affirmative2.wav",
+		"npc/combine_soldier/vo/copy.wav",
+		"npc/combine_soldier/vo/copythat.wav",
+		"npc/metropolice/vo/rodgerthat.wav",
+		"npc/combine_soldier/vo/cover.wav"
+	}
+	local LostContact = {
+		"npc/combine_soldier/vo/stayalertreportsightlines.wav",
+		"npc/combine_soldier/vo/lostcontact.wav",
+		"npc/metropolice/vo/hidinglastseenatrange.wav",
+		"npc/metropolice/vo/suspectlocationunknown.wav",
+		"npc/metropolice/vo/sweepingforsuspect.wav"
+	}
+	local EnemiesEliminated = {
+		"npc/metropolice/vo/protectioncomplete.wav",
+		"npc/metropolice/vo/suspectisbleeding.wav",
+		"npc/combine_soldier/vo/thatsitwrapitup.wav"
+	}
+
 	function ENT:PlayFindSound()
-		local SoundList = {
-			"npc/combine_soldier/vo/copy.wav",
-			"npc/combine_soldier/vo/copythat.wav",
-			"npc/combine_soldier/vo/cover.wav"
-		}
-		if self.HasEnemy == 1 then
-			SoundList = {
-				"npc/metropolice/vo/allunitsmovein.wav",
-				"npc/combine_soldier/vo/movein.wav",
-				"npc/combine_soldier/vo/prepforcontact.wav",
-				"npc/combine_soldier/vo/contactconfim.wav",
-				"npc/combine_soldier/vo/contact.wav",
-				"npc/combine_soldier/vo/engaging.wav",
-				"npc/combine_soldier/vo/sectorisnotsecure.wav",
-				"npc/metropolice/vo/thereheis.wav",
-				"npc/combine_soldier/vo/readyweaponshostilesinbound.wav",
-				"npc/combine_soldier/vo/weaponsoffsafeprepforcontact.wav"
-			}
-		end
-		self:EmitSound( SoundList[math.random(#SoundList)], 100, 100, 1, 6 )
+		self:EmitSound(Alert[math.random(#Alert)], 100, 100, 1, 6 )
 	end
+
 
 	function ENT:PlayReloadSound()
-		local SoundList = {
-			"npc/metropolice/vo/backmeupimout.wav",
-			"npc/combine_soldier/vo/coverme.wav"
-		}
-		self:EmitSound( SoundList[math.random(#SoundList)], 100, 100, 1, 6 )
+		self:EmitSound(Reload[math.random(#Reload)], 100, 100, 1, 6 )
 	end
+
 
 	function ENT:PlayHurtSound()
-		local SoundList = {
-			"npc/metropolice/pain1.wav",
-			"npc/metropolice/pain2.wav",
-			"npc/metropolice/pain3.wav",
-			"npc/metropolice/pain4.wav"
-		}
-		self:EmitSound( SoundList[math.random(#SoundList)], 100, 100, 1, 6 )
+		self:EmitSound(Hurt[math.random(#Hurt)], 100, 100, 1, 6 )
 	end
+
 
 	function ENT:PlayGrenadeSound()
-		local SoundList = {
-			"npc/metropolice/vo/grenade.wav",
-			"npc/metropolice/vo/thatsagrenade.wav"
-		}
-		self:EmitSound( SoundList[math.random(#SoundList)], 100, 100, 1, 6 )
+		self:EmitSound(Grenade[math.random(#Grenade)], 100, 100, 1, 6 )
 	end
 
+
 	function ENT:PlayFollowSound()
-		local SoundList = {
-			"npc/combine_soldier/vo/affirmative.wav",
-			"npc/combine_soldier/vo/affirmative2.wav",
-			"npc/combine_soldier/vo/copy.wav",
-			"npc/combine_soldier/vo/copythat.wav",
-			"npc/combine_soldier/vo/cover.wav",
-			"npc/metropolice/vo/rodgerthat.wav"
-		}
-		self:EmitSound( SoundList[math.random(#SoundList)], 100, 100, 1, 6 )
+		self:EmitSound(Follow[math.random(#Follow)], 100, 100, 1, 6 )
 	end
 
 	function ENT:PlayIdleSound()
-		local SoundList = {
-			"npc/combine_soldier/vo/copy.wav",
-			"npc/combine_soldier/vo/copythat.wav",
-			"npc/combine_soldier/vo/cover.wav"
-		}
-		if self.HasEnemy == 1 and self:Health() == 100*self.HealthMult then
-			SoundList = {
-				"npc/combine_soldier/vo/suppressing.wav",
-				"npc/combine_soldier/vo/hardenthatposition.wav",
-				"npc/combine_soldier/vo/movein.wav",
-				"npc/metropolice/vo/destroythatcover.wav",
-				"npc/combine_soldier/vo/heavyresistance.wav",
-				"npc/metropolice/takedown.wav",
-				"npc/metropolice/vo/covermegoingin.wav",
-				"npc/metropolice/vo/minorhitscontinuing.wav",
-				"npc/metropolice/vo/moveit.wav",
-				"npc/combine_soldier/vo/gosharpgosharp.wav",
-				"npc/combine_soldier/vo/sweepingin.wav",
-				"npc/combine_soldier/vo/targetcompromisedmovein.wav",
-				"npc/combine_soldier/vo/onedown.wav"
-			}
+		local Sound
+
+		if self:GetEnemy() then
+			if self:Health() < 50 * self.HealthMult then
+				Sound = EngagingWounded[math.random(#EngagingWounded)]
+			else
+				Sound = EngagingHealthy[math.random(#EngagingHealthy)]
+			end
+		else
+			if self.LastLostEnemy + 10 > CurTime() then
+				Sound = LostContact[math.random(#LostContact)]
+			elseif self.LastLostEnemy + 10 > CurTime() and self.LastEnemyDiedTime + 5 > CurTime() then
+				Sound = EnemiesEliminated[math.random(#EnemiesEliminated)]
+			elseif self.AllyLastSpeakTime + 2 > CurTime() then
+				Sound = Affirm[math.random(#Affirm)]
+			else
+				Sound = AllClear[math.random(#AllClear)]
+			end
 		end
-		if self.HasEnemy == 1 and self:Health() < 50*self.HealthMult then
-			SoundList = {
-				"npc/metropolice/vo/11-99officerneedsassistance.wav",
-				"npc/metropolice/vo/officerneedshelp.wav",
-				"npc/metropolice/vo/officerunderfiretakingcover.wav",
-				"npc/metropolice/vo/getdown.wav",
-				"npc/metropolice/vo/help.wav",
-				"npc/metropolice/vo/lookout.wav",
-				"npc/metropolice/vo/movingtocover.wav",
-				"npc/metropolice/vo/takecover.wav",
-				"npc/metropolice/vo/watchit.wav",
-				"npc/combine_soldier/vo/coverhurt.wav",
-				"npc/metropolice/takedown.wav",
-				"npc/combine_soldier/vo/heavyresistance.wav",
-				"npc/combine_soldier/vo/requestmedical.wav",
-				"npc/combine_soldier/vo/onedown.wav"
-			}
-		end
-		if self.HasEnemy == 0 then
-			SoundList = {
-				"npc/combine_soldier/vo/reportingclear.wav",
-				"npc/combine_soldier/vo/sightlineisclear.wav",
-				"npc/combine_soldier/vo/sectorissecurenovison.wav"
-			}
-		end
-		if self.AllyLastSpeakTime + 2 > CurTime() then
-			SoundList = {
-				"npc/metropolice/vo/affirmative.wav",
-				"npc/metropolice/vo/affirmative2.wav",
-				"npc/combine_soldier/vo/copy.wav",
-				"npc/combine_soldier/vo/copythat.wav",
-				"npc/metropolice/vo/rodgerthat.wav",
-				"npc/combine_soldier/vo/cover.wav"
-			}
-		end
-		if self.LastLostEnemy + 10 > CurTime() and self.HasEnemy == 0 then
-			SoundList = {
-				"npc/combine_soldier/vo/stayalertreportsightlines.wav",
-				"npc/combine_soldier/vo/lostcontact.wav",
-				"npc/metropolice/vo/hidinglastseenatrange.wav",
-				"npc/metropolice/vo/suspectlocationunknown.wav",
-				"npc/metropolice/vo/sweepingforsuspect.wav"
-			}
-		end
-		if self.LastLostEnemy + 10 > CurTime() and self.LastEnemyDiedTime + 5 > CurTime() and self.HasEnemy == 0 then
-			SoundList = {
-				"npc/metropolice/vo/protectioncomplete.wav",
-				"npc/metropolice/vo/suspectisbleeding.wav",
-				"npc/combine_soldier/vo/thatsitwrapitup.wav"
-			}
-		end
-		self:EmitSound( SoundList[math.random(#SoundList)], 100, 100, 1, 6 )
+
+		self:EmitSound(Sound, 100, 100, 1, 6)
 	end
 end
 
