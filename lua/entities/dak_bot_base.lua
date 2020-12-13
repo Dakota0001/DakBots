@@ -325,7 +325,7 @@ do -- Movement
 				if #CapTable > 0 then
 					for i=1, #self.Paths do
 						if #self.Paths[i] > 0 then
-							if pickedvec:Distance(self.Paths[i][#self.Paths[i]].Center) < 100 then
+							if pickedvec:Distance(self.Paths[i][#self.Paths[i]].Center) < 300 then --maybe 100 is too low, check if target paths is 0 size, try 300 size like the bots do
 								TargetPaths[#TargetPaths+1] = self.Paths[i]
 							end
 						end
@@ -338,11 +338,12 @@ do -- Movement
 						if #TargetPaths[i] > 0 then
 							if self:GetPos():Distance(TargetPaths[i][1].Center) < ShortestDist then
 								ShortestDist = self:GetPos():Distance(TargetPaths[i][1].Center)
-								self.pickedpath = table.Copy(TargetPaths[i])
+								self.pickedpath = TargetPaths[i] --don't copy it yet, copy it at the end for optimization
 							end
 						end
 					end
 				end
+				self.pickedpath = table.Copy(self.pickedpath)
 				--PrintTable(self.pickedpath)
 				self.Dest = self.pickedpath[1].Center
 			else
@@ -871,11 +872,11 @@ do -- Attacking
 						effectdata:SetEntity(self)
 						effectdata:SetScale( 0.1 )
 						util.Effect( "dakteballisticfirelight", effectdata )
-						self:EmitSound( self.FireSound, 140, 100, 1, 2)
+						--self:EmitSound( self.FireSound, 140, 100, 1, 2)
 
 						net.Start( "daktankshotfired" )
 						net.WriteVector( self:GetPos() )
-						net.WriteFloat( self.DakCaliber )
+						net.WriteFloat( math.min(self.DakCaliber,10) )
 						net.WriteString( self.FireSound )
 						net.Broadcast()
 
@@ -1087,6 +1088,10 @@ do -- Taking damage
 		self:EmitSound( SoundList[math.random(#SoundList)], 100, 100, 1, 2 )
 
 		self:BecomeRagdoll( dmginfo )
+		--TODO: if unit is on fire change their model to charple before becoming ragdoll then see if it works properly so they'll have a burnt body on death
+		--TODO: sometimes ragdoll doesn't appear
+		--TODO: gibs?
+
 		--[[
 		local body = ents.Create( "prop_ragdoll" )
 		body:SetPos( self:GetPos() )
@@ -1600,7 +1605,7 @@ do -- Think
 								if self.pickedcap == nil then self:Pathfind() end
 								if #self.pickedpath == 0 then
 									--check if goal capture point is captured by their team first then pathfind to next area if so
-									if self.DakTeam == self.pickedcap.DakTeam then
+									if self.DakTeam == self.pickedcap.DakTeam or (self.pickedcap:GetPos()*Vector(1,1,0)):Distance(self:GetPos()*Vector(1,1,0))>300 then --sometimes they will have no path, seemingly they've picked a new cap point to go to before pathfinding for it
 										self:Pathfind()
 									end
 								end
@@ -1648,4 +1653,10 @@ function ENT:GiveWeapon(wep)
 	Gun:Fire("setparentattachment", "anim_attachment_RH")
 	Gun:AddEffects(EF_BONEMERGE)
 	self.Weapon = Gun
+end
+
+function ENT:OnContact( ent )
+    if ent:IsPlayer() then
+        ent:SetPos( ent:GetPos()+(ent:GetPos()-self:GetPos()):GetNormalized()*10+Vector(0,0,1) )
+    end
 end

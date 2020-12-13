@@ -11,6 +11,7 @@ util.AddNetworkString("DT_killnotification")
 util.AddNetworkString( "DakTankGamemodeNotification" )
 util.AddNetworkString( "DT_caps" )
 util.AddNetworkString( "DT_era" )
+util.AddNetworkString( "DT_bots" )
 local Paths = nil
 if file.Exists( "dakpaths/"..game.GetMap()..".txt", "DATA" ) then
 	Paths = util.JSONToTable(util.Decompress(file.Read( "dakpaths/"..game.GetMap()..".txt", "DATA" )))
@@ -28,31 +29,32 @@ do--Map Limits Start
 	elseif game.GetMap() == "gm_emp_cyclopean" then
 		Era = "Modern"
 		StartPoints = 150
-		BotMax = 20
+		BotMax = 40
 	elseif game.GetMap() == "gm_emp_coast" then
 		Era = "WWII"
 		StartPoints = 30
-		BotMax = 20
+		BotMax = 40
 	elseif game.GetMap() == "gm_emp_palmbay" then
 		Era = "WWII"
 		StartPoints = 20
-		BotMax = 20
+		BotMax = 40
 	elseif game.GetMap() == "gm_emp_canyon" then
 		Era = "Cold War"
 		StartPoints = 50
-		BotMax = 20
+		BotMax = 40
 	elseif game.GetMap() == "gm_emp_bush" then
 		Era = "Cold War"
 		StartPoints = 75
-		BotMax = 20
+		BotMax = 40
 	elseif game.GetMap() == "gm_emp_mesa" then
 		Era = "Modern"
 		StartPoints = 100
-		BotMax = 20
+		BotMax = 40
 	end
 	--MapList = {"gm_bay","gm_emp_cyclopean","gm_emp_coast","gm_emp_palmbay","gm_emp_canyon","gm_emp_bush","gm_emp_mesa"}
-	MapList = {"gm_emp_cyclopean","gm_emp_palmbay","gm_emp_canyon","gm_emp_bush","gm_emp_mesa"}
+	MapList = {"gm_emp_cyclopean","gm_emp_palmbay","gm_emp_canyon","gm_emp_bush"}
 	--figure out what is up with gm_emp_coast bots stuck in the cave point and other places
+	--deal with issue of ai getting underwater and in bad places on gm_emp_mesa too often, also the central point on mesa can't be gotten to by AI which breaks their pathfinding if they try
 end--Map Limits End
 
 do--Player Spawn Start
@@ -130,6 +132,16 @@ do--Player Spawn Start
 		net.Send( ply )
 	end
 
+	function GM:PlayerSetModel( ply )
+	   	if ply.DakTeam == 1 then
+			ply:SetModel( "models/Combine_Soldier.mdl" )
+			ply:SetSkin( 1 )
+	   	end
+	   	if ply.DakTeam == 2 then
+			ply:SetModel( "models/Combine_Super_Soldier.mdl" )
+	   	end
+	end
+
 	function GM:PlayerInitialSpawn( ply )
 		--Caps = ents.FindByClass( "daktank_cap" )
 		GAMEMODE:PlayerSpawnAsSpectator( ply )
@@ -153,6 +165,8 @@ do--Player Spawn Start
 		if RedCount <= BlueCount then
 			ply:SetTeam( 1 )
 			ply.DakTeam = 1
+			ply:SetModel( "models/Combine_Soldier.mdl" )
+			ply:SetSkin( 1 )
 			ply:PrintMessage( HUD_PRINTTALK, "Red team picked." )
 			timer.Simple(1,function() 
 				ply:ConCommand( "dt_respawn" )
@@ -161,6 +175,7 @@ do--Player Spawn Start
 		elseif RedCount > BlueCount then
 			ply:SetTeam( 2 )
 			ply.DakTeam = 2
+			ply:SetModel( "models/Combine_Super_Soldier.mdl" )
 			ply:PrintMessage( HUD_PRINTTALK, "Blue team picked." )
 			timer.Simple(1,function() 
 				ply:ConCommand( "dt_respawn" )
@@ -280,11 +295,11 @@ do--Bot Death Start
 						net.WriteFloat(PointsGained, 32)
 					net.Send( att )
 					if not(att:InVehicle()) then att:addPoints( PointsGained ) end
-					if ply.DakTeam == 1 then
-						SetGlobalFloat("DakTankRedResources", GetGlobalFloat("DakTankRedResources") - 1 )
-					elseif ply.DakTeam == 2 then
-						SetGlobalFloat("DakTankBlueResources", GetGlobalFloat("DakTankBlueResources") - 1 )
-					end
+					--if ply.DakTeam == 1 then
+						--SetGlobalFloat("DakTankRedResources", GetGlobalFloat("DakTankRedResources") - 1 )
+					--elseif ply.DakTeam == 2 then
+						--SetGlobalFloat("DakTankBlueResources", GetGlobalFloat("DakTankBlueResources") - 1 )
+					--end
 				else
 					if Era == "WWII" then
 						PointsGained = -0.5
@@ -303,10 +318,17 @@ do--Bot Death Start
 		end
 		if ply.DakTeam == 1 then
 			RedBotCount = RedBotCount - 1
+			SetGlobalFloat("DakTankRedResources", GetGlobalFloat("DakTankRedResources") - 1 )
 		elseif ply.DakTeam == 2 then
 			BlueBotCount = BlueBotCount - 1
+			SetGlobalFloat("DakTankBlueResources", GetGlobalFloat("DakTankBlueResources") - 1 )
 		end
-		ply:EmitSound( "vo/npc/male01/pain07.wav", 100, 100 )
+		local deathsounds = {
+			"npc/combine_soldier/die1.wav",
+			"npc/combine_soldier/die2.wav",
+			"npc/combine_soldier/die3.wav"
+		}
+		ply:EmitSound( deathsounds[math.random(1,#deathsounds)], 100, 100 )
 	end
 end--Bot Death End
 
@@ -439,7 +461,12 @@ do--Player Death Start
 				end
 			end
 		end
-		ply:EmitSound( "vo/npc/male01/pain07.wav", 100, 100 )
+		local deathsounds = {
+			"npc/combine_soldier/die1.wav",
+			"npc/combine_soldier/die2.wav",
+			"npc/combine_soldier/die3.wav"
+		}
+		ply:EmitSound( deathsounds[math.random(1,#deathsounds)], 100, 100 )
 		ply:Spectate( 6 )
 		ply:ChatPrint("Respawning in 10 seconds")
 		timer.Create("RespawnTimer_"..ply:UniqueID(),10,1,function()
@@ -506,6 +533,8 @@ do--Player Spawn and Respawn Finalization Start
 	function dt_team1( ply )
 		ply:SetTeam( 1 )
 		ply.DakTeam = 1
+		ply:SetModel( "models/Combine_Soldier.mdl" )
+		ply:SetSkin( 1 )
 		ply:PrintMessage( HUD_PRINTTALK, "Red team picked." )
 		timer.Simple(1,function() 
 			ply:ConCommand( "dt_respawn" )
@@ -516,6 +545,7 @@ do--Player Spawn and Respawn Finalization Start
 	function dt_team2( ply )
 		ply:SetTeam( 2 )
 		ply.DakTeam = 2
+		ply:SetModel( "models/Combine_Super_Soldier.mdl" )
 		ply:PrintMessage( HUD_PRINTTALK, "Blue team picked." )
 		timer.Simple(1,function() 
 			ply:ConCommand( "dt_respawn" )
@@ -975,6 +1005,31 @@ do--Conquest point ticker Start
 					end
 				end
 			end--Bot Spawn End
+
+			do--send bot info
+			--it's kinda really laggy to do this and eliminates fps
+			--[[
+				local bots = ents.FindByClass("dak_gamemode_bot")
+				local redbotpos = {}
+				local redbotang = {}
+				local bluebotpos = {}
+				local bluebotang = {}
+				for i=1, #bots do
+					if bots[i].DakTeam == 1 then
+						redbotpos[#redbotpos+1] = bots[i]:GetPos()
+						redbotang[#redbotang+1] = bots[i]:GetAngles()
+					end
+					if bots[i].DakTeam == 2 then
+						bluebotpos[#bluebotpos+1] = bots[i]:GetPos()
+						bluebotang[#bluebotang+1] = bots[i]:GetAngles()
+					end
+				end
+				net.Start( "DT_bots" )
+					net.WriteString(util.TableToJSON( redbotpos ))
+					net.WriteString(util.TableToJSON( bluebotpos ))
+				net.Broadcast()
+			]]--
+			end--send bot info
 		end
 	end
 end--Conquest point ticker End

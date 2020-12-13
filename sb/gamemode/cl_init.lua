@@ -15,6 +15,14 @@ function caprecieve()
 end
 net.Receive( "DT_caps", caprecieve)
 
+--[[
+function botrecieve()
+	RedBotPos = util.JSONToTable(net.ReadString())
+	BlueBotPos = util.JSONToTable(net.ReadString())
+end
+net.Receive( "DT_bots", botrecieve)
+--]]
+
 do--Fonts Start
 	surface.CreateFont("HUDKill", {
 		font = "Arial",
@@ -1279,7 +1287,14 @@ do--Draw Map Markers Start
 			MDL:SetModelScale( 50, 0 )
 			MDL:Remove()
 			render.DrawSphere( LocalPlayer():GetPos(), 500, 30, 30, Color( 0, 0, 0, 150 ) )
-
+			--[[
+			for i=1, #RedBotPos do
+				render.DrawSphere( RedBotPos[i], 125, 30, 30, Color( 255, 0, 0, 150 ) )
+			end
+			for i=1, #BlueBotPos do
+				render.DrawSphere( BlueBotPos[i], 125, 30, 30, Color( 0, 0, 255, 150 ) )
+			end
+			]]--
 		end
 	end )
 end--Draw Map Markers End
