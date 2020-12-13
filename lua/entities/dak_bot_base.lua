@@ -166,7 +166,7 @@ do -- Enemies
 	end
 
 	function ENT:GetEnemy()
-		return IsValid(self.Enemy) and self.Enemy or nil
+		return IsValid(self.Enemy) and self.Enemy:Health() > 0 and self.Enemy or nil
 	end
 
 	local TraceData = {start = true, endpos = true, mask = MASK_BLOCKLOS, filter = true}
@@ -211,7 +211,7 @@ do -- Enemies
 			end
 		end
 
-		-- No hits on any bones, check directly at camera pos
+		-- No hits on any bones, check directly at estimated camera pos
 		TraceData.endpos = Ent:GetShootPos()
 
 		local R = util.TraceLine(TraceData)
@@ -234,11 +234,14 @@ do -- Enemies
 
 	local SIGHT_RADIUS = 5000
 	local SIGHT_RADSQR = SIGHT_RADIUS^2
-	function ENT:FindEnemy(Pos)
-		local Eye  = Pos or self:GetShootPos()
+	function ENT:FindEnemy()
+		local Eye  = self:GetShootPos()
 		local Team = self.DakTeam
 
 		local Min, Count, Target = math.huge, 0
+
+		TraceData.start  = Eye
+		TraceData.filter = {self}
 
 		for Bogie in pairs(Bogies) do
 			if Bogie:Health() <= 0 then continue end -- Not alive
@@ -248,9 +251,6 @@ do -- Enemies
 
 			local D = Eye:DistToSqr(Bogie:GetShootPos())
 			if D > SIGHT_RADSQR then continue end -- Outside of side radius
-
-			TraceData.start  = Eye
-			TraceData.filter = {self}
 
 			if self.ShootVehicles and Bogie.InVehicle and Bogie:InVehicle() then -- InVehicle does not exist for NextBots and must be checked for
 				if self:CanSeeVehicle(Bogie) then
@@ -705,7 +705,7 @@ do -- Attacking
 	if SERVER then util.AddNetworkString( "daktankshotfired" ) end -- TODO: Move this *entire* file to server, there's no reason to have this shared
 
 	function ENT:FireMelee(damage)
-		if IsValid(self:GetEnemy()) then
+		if self:GetEnemy() then
 			self.loco:FaceTowards( self:GetEnemy():GetPos()+self:GetEnemy():OBBCenter() )
 			local trace = {}
 				trace.start = self:GetPos()+self:GetEnemy():OBBCenter()
@@ -738,9 +738,9 @@ do -- Attacking
 	end
 
 	function ENT:FireShell()
-		if IsValid(self:GetEnemy()) then
+		if self:GetEnemy() then
 			self:FaceTowardsAndWait( self:GetEnemy():GetPos()+self:GetEnemy():OBBCenter() )
-			if IsValid(self:GetEnemy()) then
+			if self:GetEnemy() then
 				local missvec = self:GetRight()*25
 				if math.random(0,1) == 0 then
 					missvec = -self:GetRight()*25
@@ -810,7 +810,7 @@ do -- Attacking
 					end
 				end
 				if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() and not(self.NoFire == 1) then
-					if IsValid(self:GetEnemy()) then
+					if self:GetEnemy() then
 						for i=1, self.ShotCount do
 							local shell = {}
 							shell.Pos = self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos + FireAng:Forward()*90
@@ -878,9 +878,9 @@ do -- Attacking
 	end
 
 	function ENT:FirePrimary()
-		if IsValid(self:GetEnemy()) then
+		if self:GetEnemy() then
 			self:FaceTowardsAndWait( self:GetEnemy():GetPos()+self:GetEnemy():OBBCenter() )
-			if IsValid(self:GetEnemy()) then
+			if self:GetEnemy() then
 
 				local FireAng = Angle()
 				local SpreadAng = Angle(math.Rand(-self.Spread,self.Spread),math.Rand(-self.Spread,self.Spread),math.Rand(-self.Spread,self.Spread))
@@ -917,7 +917,7 @@ do -- Attacking
 					end
 				end
 				if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() and not(self.NoFire == 1) then
-					if IsValid(self:GetEnemy()) then
+					if self:GetEnemy() then
 						local bullet = {} 
 						bullet.Num = self.ShotCount 
 						bullet.Src = self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos
@@ -1020,7 +1020,7 @@ do -- Attacking
 
 	function ENT:ThrowNade()
 		if self.NadeLastFire+self.NadeCooldown<CurTime() then
-			if IsValid(self:GetEnemy()) then
+			if self:GetEnemy() then
 				local Nade = ents.Create("prop_physics")
 					Nade:SetModel("models/Items/grenadeAmmo.mdl")
 					util.SpriteTrail( Nade, -1, Color(255,0,0,150), true, 5, 1, 1, 1 / ( 5 + 1 ) * 0.5, "trails/smoke.vmt" )
@@ -1153,11 +1153,8 @@ end
 do -- Think
 	function ENT:Think()
 		if IsValid(self) then
-			if IsValid(self.Enemy) then
+			if self:GetEnemy() then
 				self:Aim(self.Enemy:EyePos())
-				self.HasEnemy = 1
-			else
-				self.HasEnemy = 0
 			end
 			if SERVER then
 				if (self.LastThink+0.1) < CurTime() then
@@ -1173,7 +1170,7 @@ do -- Think
 								timer.Simple(self.FindDelay,function()
 									if IsValid(self) then
 										self.LastLostEnemy = CurTime()
-										if IsValid(self:GetEnemy()) then
+										if self:GetEnemy() then
 											self:FindEnemy(self:GetEnemy():GetPos())
 										end
 									end
@@ -1242,7 +1239,7 @@ do -- Think
 				self.LastFind = CurTime()
 			end
 			if self.NextTarget then
-				if IsValid(self:GetEnemy()) then
+				if self:GetEnemy() then
 				else
 					self:SetEnemy(self.NextTarget)
 					self.NextTarget = nil
@@ -1269,7 +1266,7 @@ do -- Think
 			if GetConVarNumber("ai_disabled")==0 then
 				if ( self:GetEnemy() ) then
 					self:SetSequence(self.CombatIdleAnimation)
-					if CurTime() - self.StuckTimer > 0.5 and IsValid(self:GetEnemy()) then
+					if CurTime() - self.StuckTimer > 0.5 and self:GetEnemy() then
 						local dist = self:GetEnemy():GetPos():Distance(self:GetPos())
 						if self.commander then
 							if self.shouldmove == 1 then
@@ -1311,7 +1308,7 @@ do -- Think
 							if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() and self.LastBurstTime+1<CurTime() and rand == 1 then
 								if math.abs(Goal.y-Forward.y) < 0.1 then
 									coroutine.wait( math.Rand(0.1,0.3) ) --simulate response time
-									if IsValid(self:GetEnemy()) then -- Grenade throwing
+									if self:GetEnemy() then -- Grenade throwing
 										if self.EnemyCount >= 2 and self.NadeLastFire+self.NadeCooldown<CurTime() and math.random(1,10)<=self.EnemyCount and (self:GetEnemy():GetPos()):Distance(self:GetPos())>self.shootrange*0.5 then
 											self:SetSequence( "grenThrow" )
 											self:ResetSequenceInfo()
@@ -1328,7 +1325,7 @@ do -- Think
 										self.HitChance = self.CrouchingHitChance
 										for i=1, math.random(math.max(self.MagSize*0.5,1),self.MagSize) do
 											if self.ShotsSinceReload<self.MagSize then
-												if IsValid(self:GetEnemy()) then
+												if self:GetEnemy() then
 													if self.DakTank then
 														self:FireShell()
 													else
@@ -1357,7 +1354,7 @@ do -- Think
 										self.Spread = self.BaseSpread*1
 										self.HitChance = self.StandingHitChance
 										for i=1, math.random(self.BurstMin,self.BurstMax) do
-											if IsValid(self:GetEnemy()) and self:GetEnemy():Health() > 0 then
+											if self:GetEnemy() then
 												if self.ShotsSinceReload<self.MagSize then
 													if self.DakTank then
 														self:FireShell()
@@ -1380,14 +1377,14 @@ do -- Think
 												end
 											end
 										end
-										if IsValid(self:GetEnemy()) and self:GetEnemy():Health() > 0 then
+										if self:GetEnemy() then
 											self.LastBurstTime = CurTime()
 										else
-											if IsValid(self:GetEnemy()) then
+											if self:GetEnemy() then
 												self.LastEnemyDiedTime = CurTime()
 												timer.Simple(self.FindDelay,function()
 													if IsValid(self) then
-														if IsValid(self:GetEnemy()) then
+														if self:GetEnemy() then
 															self:FindEnemy(self:GetEnemy():GetPos())
 														end
 													end
@@ -1412,7 +1409,7 @@ do -- Think
 									end
 								else
 									if self.Stationary == false then
-										if IsValid(self:GetEnemy()) then
+										if self:GetEnemy() then
 											self:ChaseEnemyWeave()
 										else
 											self:SetSequence(self.CombatIdleAnimation)
@@ -1423,7 +1420,7 @@ do -- Think
 								end
 								if self.Tactic == 0 then
 									if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() and self.LastRunBurstTime+1<CurTime() then
-										if self:GetEnemy():Health() > 0 then
+										if self:GetEnemy() then
 											if self.ShotsSinceReload<self.MagSize then
 												self.Spread = self.BaseSpread*1.0
 												self.HitChance = self.RunningBurstHitChance
@@ -1455,7 +1452,7 @@ do -- Think
 									end
 								else
 									if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() then
-										if self:GetEnemy():Health() > 0 then
+										if self:GetEnemy() then
 											if self.ShotsSinceReload<self.MagSize then
 												self.HitChance = self.RunningFullAutoHitChance
 												self.Spread = self.BaseSpread*1.5
@@ -1503,7 +1500,7 @@ do -- Think
 							end
 							if self.Tactic == 0 then
 								if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() and self.LastRunBurstTime+1<CurTime() and self.LastBurstTime+1<CurTime() then
-									if self:GetEnemy():Health() > 0 then
+									if self:GetEnemy() then
 										if self.ShotsSinceReload<self.MagSize then
 											self.Spread = self.BaseSpread*1.0
 											self.HitChance = self.RunningBurstHitChance
@@ -1535,7 +1532,7 @@ do -- Think
 								end
 							else
 								if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() then
-									if self:GetEnemy():Health() > 0 then
+									if self:GetEnemy() then
 										if self.ShotsSinceReload<self.MagSize then
 											self.HitChance = self.RunningFullAutoHitChance
 											self.Spread = self.BaseSpread*1.5
