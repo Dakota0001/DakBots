@@ -160,27 +160,12 @@ do -- Enemies
 		end)
 	end
 
-	local function IsValidBogie(Ent)
-		return Bogies[Ent] and Ent:Health() > 0
-	end
-
 	function ENT:SetEnemy(Ent)
 		self.Enemy = Ent
 	end
 
 	function ENT:GetEnemy()
 		return IsValid(self.Enemy) and self.Enemy or nil
-	end
-
-	function ENT:HaveEnemy()
-		if ( self:GetEnemy() and IsValid( self:GetEnemy() ) ) then
-			if ( self:GetEnemy():IsPlayer() and !self:GetEnemy():Alive() ) then
-				return self:FindEnemy()
-			end
-			return true
-		else
-			return self:FindEnemy()
-		end
 	end
 
 	local TraceData = {start = true, endpos = true, mask = MASK_BLOCKLOS, filter = true}
