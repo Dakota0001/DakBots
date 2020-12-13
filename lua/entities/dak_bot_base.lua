@@ -228,9 +228,8 @@ do -- Enemies
 		return false
 	end
 
-	local EYE_HEIGHT = Vector(0, 0, 65)
 	function ENT:GetShootPos() -- Nextbots don't count as NPCs apparently so we need to define this method ourselves
-		return self:GetPos() + EYE_HEIGHT
+		return self:GetPos() + Vector(0, 0, (self:OBBMaxs() - self:OBBMins()).z - 5)
 	end
 
 	local SIGHT_RADIUS = 5000
