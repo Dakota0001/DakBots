@@ -660,7 +660,7 @@ do -- Movement
 
 	function ENT:OnContact( ent )
 		if ent:IsPlayer() then
-			ent:SetPos( ent:GetPos()+self:GetForward()*10+Vector(0,0,1)  )
+			ent:SetPos( ent:GetPos()+(ent:GetPos()-self:GetPos()):GetNormalized()*10+Vector(0,0,1) )
 		end
 	end
 
@@ -1653,10 +1653,4 @@ function ENT:GiveWeapon(wep)
 	Gun:Fire("setparentattachment", "anim_attachment_RH")
 	Gun:AddEffects(EF_BONEMERGE)
 	self.Weapon = Gun
-end
-
-function ENT:OnContact( ent )
-    if ent:IsPlayer() then
-        ent:SetPos( ent:GetPos()+(ent:GetPos()-self:GetPos()):GetNormalized()*10+Vector(0,0,1) )
-    end
 end
