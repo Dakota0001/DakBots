@@ -15,7 +15,7 @@ function ENT:Initialize()
 		------------------------------------------
 		----------------EDIT START----------------
 		------------------------------------------
-
+		Dak_Bogies[self] = true
 		--self:SetBloodColor( BLOOD_COLOR_YELLOW ) --uncomment to set blood color of bot
 		self.SpeedMult = 1 --multiplier to movement speed
 		--self.DakTeam = 2 --sets the bot's team, bots will not attack other bots of the same team, does not effect players unless players are given this flag

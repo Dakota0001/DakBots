@@ -144,11 +144,32 @@ do -- Sounds
 end
 
 do -- Enemies
-	function ENT:SetEnemy( ent )
-		self.Enemy = ent
+	Dak_Bogies = {}
+	local Bogies = Dak_Bogies
+
+	for _, V in pairs({"PlayerSpawnedNPC", "PlayerSpawn"}) do
+		hook.Add(V, "DB Enemy Tracking", function(A, B)
+			print("Spawned", A or B)
+			Bogies[A or B] = true
+		end)
 	end
+
+	for _, V in pairs({"OnNPCKilled", "PostPlayerDeath", "EntityRemoved"}) do
+		hook.Add(V, "DB Enemy Tracking", function(A, B)
+			Bogies[A or B] = nil
+		end)
+	end
+
+	local function IsValidBogie(Ent)
+		return Bogies[Ent] and Ent:Health() > 0
+	end
+
+	function ENT:SetEnemy(Ent)
+		self.Enemy = Ent
+	end
+
 	function ENT:GetEnemy()
-		return self.Enemy
+		return IsValid(self.Enemy) and self.Enemy or nil
 	end
 
 	function ENT:HaveEnemy()
@@ -162,163 +183,113 @@ do -- Enemies
 		end
 	end
 
-	function ENT:FindEnemy()
-		local Origin  = self:GetPos() + Vector(0, 0, 72) -- Offset to get better PVS results
-		local Min     = math.huge -- inf
-		local Target  = nil
-		local ValidTargets = {}
-		for _, V in pairs(ents.FindInPVS(Origin)) do
-			local ValidTarget = false
-			if self.AttackPlayers == true then
-				ValidTarget = not(V:IsFlagSet(FL_FROZEN)) and IsValid(V) and V.BugNoTrack ~= 1 and (V:IsNPC() or (V:IsPlayer() and V.DakTeam ~= self.DakTeam) or V.Bug or (V.DakTeam~=nil and V.DakTeam ~= self.DakTeam)) and V:Health()>0 and self:GetPos():Distance(V:GetPos()) < 5000
-			else
-				ValidTarget = not(V:IsFlagSet(FL_FROZEN)) and IsValid(V) and V.BugNoTrack ~= 1 and (V:IsNPC() or V.Bug or (V.DakTeam~=nil and V.DakTeam ~= self.DakTeam)) and V:Health()>0 and not(V:IsPlayer()) and self:GetPos():Distance(V:GetPos()) < 5000
-			end
-			if ValidTarget then
-				local SightTrace = {}
-					SightTrace.start = self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos
-					if V:IsPlayer() and V:InVehicle() then
-						SightTrace.endpos = V:GetVehicle():GetPos()
-					else
-						if V:LookupAttachment("eyes") > 0 then
-							SightTrace.endpos = V:GetAttachment(V:LookupAttachment("eyes")).Pos
-						else
-							SightTrace.endpos = V:GetPos()+V:OBBCenter()
-						end
-					end
-					SightTrace.filter = {self}
-				local CheckSightFire = util.TraceLine( SightTrace )
-				if IsValid(CheckSightFire.Entity) or CheckSightFire.Entity:IsWorld() then
-					if self.ShootVehicles == true then
-						if CheckSightFire.Entity == V or CheckSightFire.Entity.SPPOwner == V then
-							ValidTargets[#ValidTargets+1] = V
-							local Len = (V:GetPos() - Origin):LengthSqr()
-							if Len < Min then
-								Min = Len
-								Target = V
-							end
-						end
-					else
-						if CheckSightFire.Entity == V then
-							ValidTargets[#ValidTargets+1] = V
-							local Len = (V:GetPos() - Origin):LengthSqr()
-							if Len < Min then
-								Min = Len
-								Target = V
-							end
-						end
-					end
-				else
-					local SightTraceUp = {}
-						SightTraceUp.start = V:GetPos()+V:OBBCenter()
-						SightTraceUp.endpos = V:GetPos()+V:OBBCenter()+Vector(0,0,250)
-						SightTraceUp.filter = {self}
-					local CheckSightFireUp = util.TraceLine( SightTraceUp )
-					if CheckSightFireUp.Entity == V then
-						ValidTargets[#ValidTargets+1] = V
-						local Len = (V:GetPos() - Origin):LengthSqr()
-						if Len < Min then
-							Min = Len
-							Target = V
-						end
-					else
-						local SightTraceDown = {}
-							SightTraceDown.start = V:GetPos()+V:OBBCenter()
-							SightTraceDown.endpos = V:GetPos()+V:OBBCenter()+Vector(0,0,-250)
-							SightTraceDown.filter = {self}
-						local CheckSightFireDown = util.TraceLine( SightTraceDown )
-						if CheckSightFireDown.Entity == V then
-							ValidTargets[#ValidTargets+1] = V
-							local Len = (V:GetPos() - Origin):LengthSqr()
-							if Len < Min then
-								Min = Len
-								Target = V
-							end
-						end
-					end
+	local TraceData = {start = true, endpos = true, mask = MASK_BLOCKLOS, filter = true}
+	local Bones = { -- Ordered by priority -- TODO: Investigate if hitboxes are more reliable/faster. Hitboxes don't appear to have any sort of order however and we don't want to shoot at hands if torso is visible.
+		"ValveBiped.Bip01_Spine4", -- Spines checked first for "center of mass"
+		--"ValveBiped.Bip01_Spine3",
+		"ValveBiped.Bip01_Spine2",
+		--"ValveBiped.Bip01_Spine1",
+		--"ValveBiped.Bip01_Spine",
+		"ValveBiped.Bip01_Head",
+		--"ValveBiped.Bip01_Neck1", -- A lot of models don't seem to have this/head sits right ontop of it
+		--"ValveBiped.Bip01_L_UpperArm", -- These are actually the shoulders
+		--"ValveBiped.Bip01_R_UpperArm",
+		--"ValveBiped.Bip01_L_Forearm",
+		--"ValveBiped.Bip01_R_Forearm",
+		--"ValveBiped.Bip01_L_Hand",
+		--"ValveBiped.Bip01_R_Hand",
+		"ValveBiped.Bip01_Pelvis",
+		--"ValveBiped.Bip01_L_Thigh", -- These are actually the hips (Redundant if checking for pelvis)
+		--"ValveBiped.Bip01_R_Thigh",
+		"ValveBiped.Bip01_L_Calf", -- These are actually the knees
+		"ValveBiped.Bip01_R_Calf",
+		--"ValveBiped.Bip01_L_Foot",
+		--"ValveBiped.Bip01_R_Foot",
+	}
+	function ENT:CanSee(Ent)
+		for _, Name in pairs(Bones) do
+			local Bone = Ent:LookupBone(Name)
+
+			if Bone then
+				TraceData.endpos = Ent:GetBonePosition(Bone)
+
+				local R = util.TraceLine(TraceData)
+
+				if R.Entity == Ent or not R.Hit then
+					debugoverlay.Line(self:GetShootPos(), R.HitPos, 1, Color(0, 255, 0), true)
+
+					return true, R.HitPos
 				end
+
+				debugoverlay.Line(self:GetShootPos(), R.HitPos, 1, Color(255, 0, 0), true)
 			end
 		end
-		if not(IsValid(self.Enemy)) and Target then
-			self:PlayFindSound()
+
+		-- No hits on any bones, check directly at camera pos
+		TraceData.endpos = Ent:GetShootPos()
+
+		local R = util.TraceLine(TraceData)
+
+		if R.Entity == Ent or not R.Hit then
+			debugoverlay.Line(self:GetShootPos(), R.HitPos, 1, Color(0, 255, 0), true)
+			return true, R.HitPos
 		end
-		self.EnemyCount = #ValidTargets
-		self.Enemy = Target
-		self.TargetAge = CurTime()
-	
-		return Target and true or false
+
+		return false
 	end
 
-	function ENT:FindCloseEnemy(pos)
-		local Origin  = self:GetPos() + Vector(0, 0, 72) -- Offset to get better PVS results
-		local Min     = math.huge -- inf
-		local Target  = nil
-		local ValidTargets = {}
-		for _, V in pairs(ents.FindInPVS(Origin)) do
-			local ValidTarget = false
-			if self.AttackPlayers == true then
-				ValidTarget = not(V:IsFlagSet(FL_FROZEN)) and IsValid(V) and V.BugNoTrack ~= 1 and (V:IsNPC() or (V:IsPlayer() and V.DakTeam ~= self.DakTeam) or V.Bug or (V.DakTeam~=nil and V.DakTeam ~= self.DakTeam)) and V:Health()>0
-			else
-				ValidTarget = not(V:IsFlagSet(FL_FROZEN)) and IsValid(V) and V.BugNoTrack ~= 1 and (V:IsNPC() or V.Bug or (V.DakTeam~=nil and V.DakTeam ~= self.DakTeam)) and V:Health()>0 and not(V:IsPlayer())
-			end
-			if ValidTarget then
-				local SightTrace = {}
-					SightTrace.start = self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos
-					if V:IsPlayer() and V:InVehicle() then
-						SightTrace.endpos = V:GetVehicle():GetPos()
-					else
-						if V:LookupAttachment("eyes") > 0 then
-							SightTrace.endpos = V:GetAttachment(V:LookupAttachment("eyes")).Pos
-						else
-							SightTrace.endpos = V:GetPos()+V:OBBCenter()
-						end
-					end
-					SightTrace.filter = {self}
-				local CheckSightFire = util.TraceLine( SightTrace )
-				if IsValid(CheckSightFire.Entity) or CheckSightFire.Entity:IsWorld() then
-					if CheckSightFire.Entity == V then
-						ValidTargets[#ValidTargets+1] = V
-						local Len = (V:GetPos() - Origin):LengthSqr()
-						if Len < Min then
-							Min = Len
-							Target = V
-						end
-					end
-				else
-					local SightTraceUp = {}
-						SightTraceUp.start = V:GetPos()+V:OBBCenter()
-						SightTraceUp.endpos = V:GetPos()+V:OBBCenter()+Vector(0,0,250)
-						SightTraceUp.filter = {self}
-					local CheckSightFireUp = util.TraceLine( SightTraceUp )
-					if CheckSightFireUp.Entity == V then
-						ValidTargets[#ValidTargets+1] = V
-						local Len = (V:GetPos() - Origin):LengthSqr()
-						if Len < Min then
-							Min = Len
-							Target = V
-						end
-					else
-						local SightTraceDown = {}
-							SightTraceDown.start = V:GetPos()+V:OBBCenter()
-							SightTraceDown.endpos = V:GetPos()+V:OBBCenter()+Vector(0,0,-250)
-							SightTraceDown.filter = {self}
-						local CheckSightFireDown = util.TraceLine( SightTraceDown )
-						if CheckSightFireDown.Entity == V then
-							ValidTargets[#ValidTargets+1] = V
-							local Len = (V:GetPos() - Origin):LengthSqr()
-							if Len < Min then
-								Min = Len
-								Target = V
-							end
-						end
-					end
+	function ENT:CanSeeVehicle(Ent) -- TODO: Put something here
+		return false
+	end
+
+	local EYE_HEIGHT = Vector(0, 0, 65)
+	function ENT:GetShootPos() -- Nextbots don't count as NPCs apparently so we need to define this method ourselves
+		return self:GetPos() + EYE_HEIGHT
+	end
+
+	local SIGHT_RADIUS = 5000
+	local SIGHT_RADSQR = SIGHT_RADIUS^2
+	function ENT:FindEnemy(Pos)
+		local Eye  = Pos or self:GetShootPos()
+		local Team = self.DakTeam
+
+		local Min, Count, Target = math.huge, 0
+
+		for Bogie in pairs(Bogies) do
+			if Bogie:Health() <= 0 then continue end -- Not alive
+			if Bogie:IsFlagSet(FL_FROZEN) then continue end -- Not sure why we're checking if they're frozen but ok
+			if not Bogie:TestPVS(Eye) then continue end -- Not in our PVS
+			if Bogie.DakTeam and Bogie.DakTeam == Team then continue end -- On the same team
+
+			local D = Eye:DistToSqr(Bogie:GetShootPos())
+			if D > SIGHT_RADSQR then continue end -- Outside of side radius
+
+			TraceData.start  = Eye
+			TraceData.filter = {self}
+
+			if self.ShootVehicles and Bogie.InVehicle and Bogie:InVehicle() then -- InVehicle does not exist for NextBots and must be checked for
+				if self:CanSeeVehicle(Bogie) then
+					-- TODO: Put something here
 				end
+			elseif D < Min and self:CanSee(Bogie) then
+				Min    = D
+				Target = Bogie
+				Count  = Count + 1
 			end
 		end
-		self.EnemyCount = #ValidTargets
-		self.Enemy = Target
-		self.TargetAge = CurTime()
-		return Target and true or false
+
+		if Target then
+			if not self:GetEnemy() then -- Alert!
+				self:PlayFindSound()
+			end
+
+			self.EnemyCount = Count -- TODO: Upgrade this behavior... Currently this causes a grenade to be thrown if multiple targets are spotted, regardless of clustering/distance from one another
+			--self.TargetAge  = CurTime() -- This doesn't seem to be used for anything
+			self:SetEnemy(Target)
+			return true
+		else
+			return false
+		end
 	end
 end
 
@@ -1213,7 +1184,7 @@ do -- Think
 									if IsValid(self) then
 										self.LastLostEnemy = CurTime()
 										if IsValid(self:GetEnemy()) then
-											self:FindCloseEnemy(self:GetEnemy():GetPos())
+											self:FindEnemy(self:GetEnemy():GetPos())
 										end
 									end
 								end)
@@ -1350,7 +1321,7 @@ do -- Think
 							if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() and self.LastBurstTime+1<CurTime() and rand == 1 then
 								if math.abs(Goal.y-Forward.y) < 0.1 then
 									coroutine.wait( math.Rand(0.1,0.3) ) --simulate response time
-									if IsValid(self:GetEnemy()) then
+									if IsValid(self:GetEnemy()) then -- Grenade throwing
 										if self.EnemyCount >= 2 and self.NadeLastFire+self.NadeCooldown<CurTime() and math.random(1,10)<=self.EnemyCount and (self:GetEnemy():GetPos()):Distance(self:GetPos())>self.shootrange*0.5 then
 											self:SetSequence( "grenThrow" )
 											self:ResetSequenceInfo()
@@ -1427,7 +1398,7 @@ do -- Think
 												timer.Simple(self.FindDelay,function()
 													if IsValid(self) then
 														if IsValid(self:GetEnemy()) then
-															self:FindCloseEnemy(self:GetEnemy():GetPos())
+															self:FindEnemy(self:GetEnemy():GetPos())
 														end
 													end
 												end)
