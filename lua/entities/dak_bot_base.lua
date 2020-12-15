@@ -1072,8 +1072,13 @@ do -- Taking damage
 		local SoundList = {"npc/combine_soldier/die1.wav","npc/combine_soldier/die2.wav","npc/combine_soldier/die3.wav"}
 		self:EmitSound( SoundList[math.random(#SoundList)], 100, 100, 1, 2 )
 
-		self:BecomeRagdoll( dmginfo )
-		--TODO: if unit is on fire change their model to charple before becoming ragdoll then see if it works properly so they'll have a burnt body on death
+		if SERVER then
+			if self:IsOnFire() then
+				self:SetModel("models/humans/charple0" .. math.random(1, 4) .. ".mdl")
+			end
+
+			self:BecomeRagdoll( dmginfo )
+		end
 		--TODO: sometimes ragdoll doesn't appear
 		--TODO: gibs?
 
