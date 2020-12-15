@@ -3,8 +3,8 @@ AddCSLuaFile( "shared.lua" )
 AddCSLuaFile("player.lua")
 include( 'shared.lua' )
 include( 'player.lua' )
-SetGlobalFloat("DakTankRedResources", 1000)
-SetGlobalFloat("DakTankBlueResources", 1000)
+SetGlobalFloat("DakTankRedResources", 2500)
+SetGlobalFloat("DakTankBlueResources", 2500)
 local Reds, Blues, Specs = 1,2,3
 util.AddNetworkString("DT_killnotification")
 --Caps = ents.FindByClass( "daktank_cap" )
@@ -22,15 +22,15 @@ do--Map Limits Start
 	StartPoints = 0
 	BotMax = 20 --per team
 
-	if game.GetMap() == "gm_bay" then
+	if game.GetMap() == "gm_bay" then --inactive
 		Era = "WWII"
 		StartPoints = 10
 		BotMax = 0
 	elseif game.GetMap() == "gm_emp_cyclopean" then
 		Era = "Modern"
 		StartPoints = 150
-		BotMax = 40
-	elseif game.GetMap() == "gm_emp_coast" then
+		BotMax = 80
+	elseif game.GetMap() == "gm_emp_coast" then --inactive
 		Era = "WWII"
 		StartPoints = 30
 		BotMax = 40
@@ -45,14 +45,22 @@ do--Map Limits Start
 	elseif game.GetMap() == "gm_emp_bush" then
 		Era = "Cold War"
 		StartPoints = 75
-		BotMax = 40
-	elseif game.GetMap() == "gm_emp_mesa" then
+		BotMax = 100
+	elseif game.GetMap() == "gm_emp_mesa" then --inactive
 		Era = "Modern"
 		StartPoints = 100
 		BotMax = 40
+	elseif game.GetMap() == "gm_emp_chain" then
+		Era = "Cold War"
+		StartPoints = 60
+		BotMax = 100
+	elseif game.GetMap() == "gm_emp_manticore" then
+		Era = "WWII"
+		StartPoints = 10
+		BotMax = 75
 	end
 	--MapList = {"gm_bay","gm_emp_cyclopean","gm_emp_coast","gm_emp_palmbay","gm_emp_canyon","gm_emp_bush","gm_emp_mesa"}
-	MapList = {"gm_emp_cyclopean","gm_emp_palmbay","gm_emp_canyon","gm_emp_bush"}
+	MapList = {"gm_emp_manticore","gm_emp_chain","gm_emp_cyclopean","gm_emp_palmbay","gm_emp_canyon","gm_emp_bush"}
 	--figure out what is up with gm_emp_coast bots stuck in the cave point and other places
 	--deal with issue of ai getting underwater and in bad places on gm_emp_mesa too often, also the central point on mesa can't be gotten to by AI which breaks their pathfinding if they try
 end--Map Limits End
@@ -686,6 +694,34 @@ do--Add Cap Point Start
 		AddCap("gm_emp_mesa", Vector(-13969.802734375, -11518.235351563, 608.03125), 1)
 		AddCap("gm_emp_mesa", Vector(11756.094726563, 14226.184570313, 192.03125), 2)
 		AddCap("gm_emp_mesa", Vector(-10521.319335938, 10493.283203125, 216.35948181152), 0)
+		--gm_emp_chain
+		AddCap("gm_emp_chain", Vector(13969.4375, 10955.375, -1084.28125+25), 1)
+		AddCap("gm_emp_chain", Vector(-13249.75, 9978.21875, -1084.375+25), 2)
+		AddCap("gm_emp_chain", Vector(-3358.75, 2094.40625, -1143.6875+25), 2)
+		AddCap("gm_emp_chain", Vector(4454.4375, -5777.65625, -1647.6875+25), 1)
+		AddCap("gm_emp_chain", Vector(13280.0625, -12846.96875, -1103.4375+25), 1)
+		AddCap("gm_emp_chain", Vector(747.125, -2458.8125, -1402.75+25), 0)
+		AddCap("gm_emp_chain", Vector(-5281.34375, -8283.0625, -1759.6875+25), 0)
+		AddCap("gm_emp_chain", Vector(-13177.53125, -12754.8125, -1135.0625+25), 2)
+		AddCap("gm_emp_chain", Vector(-12984.21875, -4274.65625, -1135+25), 0)
+		AddCap("gm_emp_chain", Vector(7657.46875, 777.5, -1142.25+25), 0)
+		AddCap("gm_emp_chain", Vector(11205.25, -5642.21875, -1135.6875+25), 0)
+		AddCap("gm_emp_chain", Vector(14428.59375, 4990.09375, -1143.6875+25), 0)
+		AddCap("gm_emp_chain", Vector(1680.15625, 12556.53125, -1143.6875+25), 0)
+		AddCap("gm_emp_chain", Vector(-7703, 12065.15625, -1143.6875+25), 0)
+		--gm_emp_manticore
+		AddCap("gm_emp_manticore", Vector(-4293.71875, 4164.875, 1719.71875), 1)
+		AddCap("gm_emp_manticore", Vector(4521.40625, -4828.6875, 1719.3125), 2)
+		AddCap("gm_emp_manticore", Vector(2880.625, 1123.6875, 1179.03125), 0)
+		AddCap("gm_emp_manticore", Vector(-5548.21875, -239.375, 1239.78125), 0)
+		AddCap("gm_emp_manticore", Vector(-7461.90625, 9851.3125, 1211.1875), 1)
+		AddCap("gm_emp_manticore", Vector(7434.4375, -11102.09375, 1159.3125), 2)
+		AddCap("gm_emp_manticore", Vector(-2540.9375, -3092.9375, 1719.3125), 0)
+		AddCap("gm_emp_manticore", Vector(4242.375, 5819.125, 1719.28125), 0)
+		AddCap("gm_emp_manticore", Vector(10482.78125, -198.15625, 1735.375), 0)
+		AddCap("gm_emp_manticore", Vector(-12926.375, -4013.46875, 1671.40625), 0)
+		AddCap("gm_emp_manticore", Vector(-12635.03125, 2757.21875, 1670.53125), 0)
+
 		Caps = ents.FindByClass( "daktank_cap" )
 	end)
 end--Add Cap Point End

@@ -98,7 +98,7 @@ function ENT:Think()
 				end
 				net.Start( "DT_killnotification" )
 					net.WriteInt(3, 32)
-					net.WriteInt(PointsGained, 32)
+					net.WriteFloat(PointsGained, 32)
 				net.Send( v )
 				if not(v:InVehicle()) then v:addPoints( PointsGained ) end
 			end
@@ -122,7 +122,7 @@ function ENT:Think()
 				end
 				net.Start( "DT_killnotification" )
 					net.WriteInt(3, 32)
-					net.WriteInt(PointsGained, 32)
+					net.WriteFloat(PointsGained, 32)
 				net.Send( v )
 				if not(v:InVehicle()) then v:addPoints( PointsGained ) end
 			end

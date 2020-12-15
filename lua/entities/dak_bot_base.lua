@@ -335,7 +335,9 @@ do -- Movement
 				self.Dest = self:GetPos() + Vector(math.Rand(-1000000,1000000),math.Rand(-1000000,1000000),0)
 			end
 		else
-			self.Dest = self.Leader.Dest
+			--self.Dest = self.Leader.Dest
+			self.pickedpath = table.Copy(self.Leader.pickedpath)
+			self.Dest = self.Leader.pickedpath[1].Center
 		end
 	end
 
@@ -1592,7 +1594,7 @@ do -- Think
 								if self.pickedcap == nil then self:Pathfind() end
 								if #self.pickedpath == 0 then
 									--check if goal capture point is captured by their team first then pathfind to next area if so
-									if self.DakTeam == self.pickedcap.DakTeam or (self.pickedcap:GetPos()*Vector(1,1,0)):Distance(self:GetPos()*Vector(1,1,0))>300 then --sometimes they will have no path, seemingly they've picked a new cap point to go to before pathfinding for it
+									if self.DakTeam == self.pickedcap.DakTeam or (self.pickedcap:GetPos()*Vector(1,1,0)):Distance(self:GetPos()*Vector(1,1,0))>300 then
 										self:Pathfind()
 									end
 								end
