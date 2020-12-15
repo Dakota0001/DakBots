@@ -15,7 +15,7 @@ local Nodes         = DakPath.Nodes
 local Unused        = DakPath.Unused
 local Duration      = 10
 local Radius        = 25
-local StepSize      = 50
+local StepSize      = 26.25 --current bot step size
 local MaxHeight     = 50
 local OffsetAng     = 10
 local WadeDepth		= 48
@@ -27,7 +27,7 @@ local MinimumPath   = 30
 local MaxIterations = 50000
 local GridSize      = 75
 local GridHeight    = 150
-local JumpHeight    = 56 -- Totally not a random number I decided to pick because of the stairs
+local JumpHeight    = 35 --actual bot step height currently as no jumping is allowed --56 -- Totally not a random number I decided to pick because of the stairs
 local GridCube      = Vector(GridSize, GridSize, GridHeight) * 0.495 -- Leaving a small gap between each of them
 local HalfHeight    = Vector(0, 0, GridHeight * 0.5)
 local VectorFormat  = "[%s, %s, %s]"
@@ -38,7 +38,7 @@ local WaterTrace = { start = true, endpos = true, mins = Vector(), maxs = Vector
 local NodeTrace = { start = true, endpos = true, mins = Vector(-Radius, -Radius, -5), maxs = Vector(Radius, Radius, 20), mask = MASK_SOLID_BRUSHONLY, output = CheckNode }
 
 local function DropVector(Vec)
-	DownTrace.start  = Vec+Vector(0,0,500)
+	DownTrace.start  = Vec+Vector(0,0,25)
 	DownTrace.endpos = Vec-Vector(0,0,500)
 	local CheckDown = util.TraceHull(DownTrace)
 	return CheckDown.HitPos
@@ -267,9 +267,8 @@ end)
 
 concommand.Add("path_make_all_paths", function()
 	--gm_emp_cyclopean
-	--[[
-	local VecTable = {
-		Vector(9097.475586, -11095.366211, 3648.031250),
+	local cyclopeanTable = {
+		Vector(8343.555664, -10086.312500, 3376.031250), --had to be changed
 		Vector(6137.738281, 1248.062622, 2719.822266),
 		Vector(10387.305664, 9959.908203, 3368.031250),
 		Vector(30.444704, 8613.874023, 2368.031250),
@@ -278,10 +277,27 @@ concommand.Add("path_make_all_paths", function()
 		Vector(-5272.229492, 2796.873291, 2737.434570),
 		Vector(-11754.385742, 10937.160156, 4147.003906) --had to be changed
 	}
-	]]--
-
+	--gm_emp_coast
+	local coastTable = {
+		Vector(680.035828, 1934.840698, 728.031250),
+		Vector(-360.71417236328, 14465.139648438, 100.83126831055),
+		Vector(-377.65539550781, -8393.970703125, 537.8193359375),
+		Vector(11176.348632813, 4945.646484375, 498.98565673828),
+		Vector(-10717.245117188, -1661.9329833984, 317.25704956055),
+		Vector(-9371.2109375, 8421.5537109375, 129.69058227539),
+		Vector(11237.416992188, -5095.6333007813, 128.03125)
+	}
+	--gm_emp_palmbay
+	local palmbayTable = {
+		Vector(-8020.9624023438, -6747.1743164063, -2330.3911132813),
+		Vector(3700.7368164063, -9836.2275390625, -2575.96875),
+		Vector(3800.0705566406, -1593.5148925781, -2954.0405273438),
+		Vector(10389.444335938, 982.81701660156, -2063.9711914063),
+		Vector(9119.900390625, 10735.4296875, -2331.96875),
+		Vector(-7949.4086914063, 6239.8110351563, -2933.0256347656)
+	}
 	--gm_emp_canyon
-	local VecTable = {
+	local canyonTable = {
 		Vector(11469.577148438, -6255.041015625, 20.59476852417),
 		Vector(8473.134765625, 325.95901489258, 520.21319580078),
 		Vector(8803.6962890625, 5931.8852539063, 0.47704315185547),
@@ -292,6 +308,67 @@ concommand.Add("path_make_all_paths", function()
 		Vector(-7314.5634765625, 11391.150390625, 25.019695281982),
 		Vector(-6729.2905273438, -4935.2368164063, 19.781524658203)
 	}
+	--gm_emp_bush
+	local bushTable = {
+		Vector(461.644196, -183.797287, -3609.968750), --changed
+		Vector(1033.4080810547, -11927.537109375, -2931.0432128906),
+		Vector(-12372.145507813, -11344.141601563, -3327.9558105469),
+		Vector(-9305.3740234375, 941.68090820313, -3321.1452636719),
+		Vector(-12777.774414063, 7177.6962890625, -2993.7590332031),
+		Vector(-6259.2866210938, 2982.8078613281, -3294.0197753906),
+		Vector(-5839.708984375, -8377.15625, -3647.3486328125),
+		Vector(-754.16394042969, 9957.4892578125, -3308.4055175781),
+		Vector(3425.7854003906, 6805.392578125, -2992.5424804688),
+		Vector(1462.0169677734, -6538.375, -3212.3059082031),
+		Vector(9223.1982421875, -6720.69140625, -3002.7626953125),
+		Vector(11080.934570313, -3762.5844726563, -2934.8410644531),
+		Vector(7897.71875, 2508.1240234375, -3320.9345703125),
+		Vector(11560.930664063, 12248.51171875, -3327.96875),
+		Vector(5303.6704101563, 9606.1435546875, -2999.4294433594)
+	}
+	--gm_emp_mesa
+	local mesaTable = {
+		Vector(10849.646484375, -9665.6513671875, 512.03125),
+		--Vector(-1935.9918212891, 548.43914794922, 1743.03125), --this is the tower on the middle of the map that requires ladders to get to
+		Vector(1497.2092285156, 13140.393554688, 160.03125),
+		Vector(-2498.0358886719, -13811.28515625, 160.03125),
+		Vector(-13969.802734375, -11518.235351563, 608.03125),
+		Vector(11756.094726563, 14226.184570313, 192.03125),
+		Vector(-10521.319335938, 10493.283203125, 216.35948181152)
+	}
+	--gm_emp_chain
+	local chainTable = {
+		Vector(13969.4375, 10955.375, -1084.28125+25),
+		Vector(-13249.75, 9978.21875, -1084.375+25),
+		Vector(-3358.75, 2094.40625, -1143.6875+25),
+		Vector(4454.4375, -5777.65625, -1647.6875+25),
+		Vector(13280.0625, -12846.96875, -1103.4375+25),
+		Vector(747.125, -2458.8125, -1402.75+25),
+		Vector(-5281.34375, -8283.0625, -1759.6875+25),
+		Vector(-13177.53125, -12754.8125, -1135.0625+25),
+		Vector(-12984.21875, -4274.65625, -1135+25),
+		Vector(7657.46875, 777.5, -1142.25+25),
+		Vector(11205.25, -5642.21875, -1135.6875+25),
+		Vector(14428.59375, 4990.09375, -1143.6875+25),
+		Vector(1680.15625, 12556.53125, -1143.6875+25),
+		Vector(-7703, 12065.15625, -1143.6875+25)
+	}
+	--gm_emp_manticore
+	local manticoreTable = {
+		Vector(-4293.71875, 4164.875, 1719.71875),
+		Vector(4521.40625, -4828.6875, 1719.3125),
+		Vector(2880.625, 1123.6875, 1179.03125),
+		Vector(-5548.21875, -239.375, 1239.78125),
+		Vector(-7461.90625, 9851.3125, 1211.1875),
+		Vector(7434.4375, -11102.09375, 1159.3125),
+		Vector(-2540.9375, -3092.9375, 1719.3125),
+		Vector(4242.375, 5819.125, 1719.28125),
+		Vector(10482.78125, -198.15625, 1735.375),
+		Vector(-12926.375, -4013.46875, 1671.40625),
+		Vector(-12635.03125, 2757.21875, 1670.53125)
+	}
+	
+	local VecTable = manticoreTable
 	local Fine = true
 	local Broke = {}
 	for i=1, #VecTable do
@@ -374,8 +451,8 @@ end)
 
 concommand.Add("show_astar_paths", function()
 	for i=1, #DakPath.Paths do
-		for j=1, #DakPath.Paths[i] do
-			debugoverlay.Box(DakPath.Paths[i][j].Floor, Vector(GridSize, GridSize, GridHeight) * -0.5, Vector(GridSize, GridSize, GridHeight) * 0.5, 15, Color(0, 255, 0))
+		for I, V in ipairs(DakPath.Paths[i]) do
+			debugoverlay.Box(V.Floor, Vector(GridSize, GridSize, 2) * -0.5, Vector(GridSize, GridSize, 2) * 0.5, 30, HSVToColor(I * (360 / #DakPath.Paths[i]), 1, 1))
 		end
 	end
 end)
@@ -616,7 +693,7 @@ function AStar(Start, End)
 				fScore[Node] = G + Node.Floor:DistToSqr(End)
 
 				Open[Node] = true
-				debugoverlay.Cross(Node.Floor + Vector(0, 0, 5) + VectorRand() * 5, 5, 30, ColorRand(100, 255))
+				--debugoverlay.Cross(Node.Floor + Vector(0, 0, 5) + VectorRand() * 5, 5, 30, ColorRand(100, 255))
 			end
 		end
 	end
