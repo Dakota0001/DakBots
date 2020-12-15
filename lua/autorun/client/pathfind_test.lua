@@ -368,7 +368,7 @@ concommand.Add("path_make_all_paths", function()
 		Vector(-12635.03125, 2757.21875, 1670.53125)
 	}
 	
-	local VecTable = manticoreTable
+	local VecTable = chainTable
 	local Fine = true
 	local Broke = {}
 	for i=1, #VecTable do

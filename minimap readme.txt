@@ -1,0 +1,1 @@
+minimap is to be used only outside of the gamemode and goes into the client autorun folder
