@@ -92,11 +92,22 @@ do--Player Spawn Start
 		end
 
 		if ply.PerkType == 2 then
-			ply:SetMaxHealth( 150 ) 
-			ply:SetHealth(150)
+			ply:SetMaxHealth( 250 ) 
+			ply:SetHealth(250)
 		else
-			ply:SetMaxHealth( 100 ) 
-			ply:SetHealth(100)
+			if ply.BloodStacks ~= nil then
+				if ply.PerkType == 4 then
+					ply:SetMaxHealth( 100 + ply.BloodStacks*5 ) 
+					ply:SetHealth(100 + ply.BloodStacks*5 )
+				else
+					ply:SetMaxHealth( 100 ) 
+					ply:SetHealth(100)
+				end
+			else
+				ply:SetMaxHealth( 100 ) 
+				ply:SetHealth(100)
+			end
+			
 		end
 
 		if ply.SpawnPoint ~= nil then
@@ -113,6 +124,7 @@ do--Player Spawn Start
 					spawnpos = (Caps[ply.SpawnPoint]:GetPos()+Vector(-100,-100,50))
 				end
 
+				--TODO: make players not spawn on bots which can happen randomly sometimes if a bot happens to be here
 				local spawntrace = util.TraceLine( {
 					start = spawnpos+Vector(0,0,1000),
 					endpos = spawnpos-Vector(0,0,1000),
@@ -249,11 +261,13 @@ do--Loadout Fill Start
 
 		if PrimaryType ~= nil then
 			ply:Give( Primaries[PrimaryType], false )
-			if ply.PerkType == 1 then ply:Give( Primaries[PrimaryType], false ) end
 			ply:Give( Secondaries[SecondaryType], false )
-			if ply.PerkType == 1 then ply:Give(  Secondaries[SecondaryType], false ) end
 			ply:Give( Specials[SpecialType], false )
-			if ply.PerkType == 1 then ply:Give( Specials[SpecialType], false ) end
+			if ply.PerkType == 1 then
+				ply:Give( Primaries[PrimaryType], false )
+				ply:Give( Secondaries[SecondaryType], false )
+				ply:Give( Specials[SpecialType], false )
+			end
 
 			--Caps = ents.FindByClass( "daktank_cap" )
 			if ply.SpawnPoint ~= nil then
@@ -289,7 +303,10 @@ do--Bot Death Start
 				local PointsGained = 0
 				if att:Team()~=ply.DakTeam then
 					if att.PerkType == 4 then
+						att:SetMaxHealth(att:GetMaxHealth() + 5)
 						att:SetHealth(att:GetMaxHealth())
+						if att.BloodStacks == nil then att.BloodStacks = 0 end
+						att.BloodStacks = att.BloodStacks + 1
 					end
 					if Era == "WWII" then
 						PointsGained = 0.1
@@ -343,13 +360,17 @@ end--Bot Death End
 do--Player Death Start
 	function GM:PlayerDeath( ply, inf, att )
 		timer.Destroy( "HPRegen_" .. ply:UniqueID() )
+		if ply.BloodStacks ~= nil then ply.BloodStacks = 0 end
 		if ply ~= att then
 			ply:AddFrags( 1 )
 			if att:IsPlayer() and IsValid( att ) then
 				local PointsGained = 0
 				if att:Team()~=ply:Team() then
 					if att.PerkType == 4 then
+						att:SetMaxHealth(att:GetMaxHealth() + 25)
 						att:SetHealth(att:GetMaxHealth())
+						if att.BloodStacks == nil then att.BloodStacks = 0 end
+						att.BloodStacks = att.BloodStacks + 5
 					end
 					if ply:InVehicle() == true then
 						if Era == "WWII" then
@@ -993,7 +1014,7 @@ do--Conquest point ticker Start
 								mins = Vector(-50,-50,5),
 								maxs = Vector(50,50,10),
 							} )
-							if spawntrace.Entity:GetClass() ~= "dak_gamemode_bot" then
+							if spawntrace.Entity:IsWorld() == true then
 								local bot = ents.Create("dak_gamemode_bot")
 								bot:SetPos(spawntrace.HitPos+Vector(0,0,25))
 								bot:SetAngles(Angle(0, 0, 0))
@@ -1026,7 +1047,7 @@ do--Conquest point ticker Start
 								mins = Vector(-50,-50,5),
 								maxs = Vector(50,50,10),
 							} )
-							if spawntrace.Entity:GetClass() ~= "dak_gamemode_bot" then
+							if spawntrace.Entity:IsWorld() == true then
 							local bot = ents.Create("dak_gamemode_bot")
 								bot:SetPos(spawntrace.HitPos+Vector(0,0,25))
 								bot:SetAngles(Angle(0, 0, 0))

@@ -1148,16 +1148,16 @@ do--Respawning Start
 					self.Label5desc:SetText("Doubled ammo reserves, go nuts")
 					ply.DakTankLoadout.PerkCost = 0
 				elseif index == 2 then
-					self.Label5desc:SetText("50% extra health")
+					self.Label5desc:SetText("250 max health")
 					ply.DakTankLoadout.PerkCost = 0
 				elseif index == 3 then
 					self.Label5desc:SetText("Regenerate 5hp per second")
 					ply.DakTankLoadout.PerkCost = 0
 				elseif index == 4 then
-					self.Label5desc:SetText("Gain full hp on kill")
+					self.Label5desc:SetText("Gain full hp and extra max hp on kill")
 					ply.DakTankLoadout.PerkCost = 0
 				elseif index == 5 then
-					self.Label5desc:SetText("Recoil halved")
+					self.Label5desc:SetText("Recoil quartered")
 					ply.DakTankLoadout.PerkCost = 0
 				end
 				UpdateReadoutFunction()
@@ -1173,16 +1173,16 @@ do--Respawning Start
 				PerkMenu.Label5desc:SetText("Doubled ammo reserves, go nuts")
 				ply.DakTankLoadout.PerkCost = 0
 			elseif tonumber(ply:GetInfo( "DakTankLoadoutPerk" )) == 2 then
-				PerkMenu.Label5desc:SetText("50% extra health")
+				PerkMenu.Label5desc:SetText("250 max health")
 				ply.DakTankLoadout.PerkCost = 0
 			elseif tonumber(ply:GetInfo( "DakTankLoadoutPerk" )) == 3 then
 				PerkMenu.Label5desc:SetText("Regenerate 5hp per second")
 				ply.DakTankLoadout.PerkCost = 0
 			elseif tonumber(ply:GetInfo( "DakTankLoadoutPerk" )) == 4 then
-				PerkMenu.Label5desc:SetText("Gain full hp on kill")
+				PerkMenu.Label5desc:SetText("Gain full hp and extra max hp on kill")
 				ply.DakTankLoadout.PerkCost = 0
 			elseif tonumber(ply:GetInfo( "DakTankLoadoutPerk" )) == 5 then
-				PerkMenu.Label5desc:SetText("Recoil halved")
+				PerkMenu.Label5desc:SetText("Recoil quartered")
 				ply.DakTankLoadout.PerkCost = 0
 			end
 
