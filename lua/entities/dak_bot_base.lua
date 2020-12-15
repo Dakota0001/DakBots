@@ -280,7 +280,7 @@ end
 
 do -- Movement
 	function ENT:Pathfind()
-		if self.Leader == self or not(IsValid(self.Leader)) or self.Leader.Following==1 then
+		if self.Leader == self or not(IsValid(self.Leader)) or self.Leader.Following==1 or self.Leader.pickedpath == nil then
 			if self.Paths ~= nil then
 				--In gamemode hold a table of capture points gained by running a find once for all capture point ents then pick one that is neutral first and if no neutral then an enemy one then return vector as goal
 				if self.caps == nil then self.caps = ents.FindByClass("daktank_cap") end
@@ -337,7 +337,7 @@ do -- Movement
 		else
 			--self.Dest = self.Leader.Dest
 			self.pickedpath = table.Copy(self.Leader.pickedpath)
-			self.Dest = self.Leader.pickedpath[1].Center
+			self.Dest = self.pickedpath[1].Center
 		end
 	end
 
