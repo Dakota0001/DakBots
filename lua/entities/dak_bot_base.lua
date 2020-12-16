@@ -248,11 +248,18 @@ do -- Enemies
 			if Bogie:IsFlagSet(FL_FROZEN) then continue end -- Not sure why we're checking if they're frozen but ok
 			if not Bogie:TestPVS(Eye) then continue end -- Not in our PVS
 			if Bogie.DakTeam and Bogie.DakTeam == Team then continue end -- On the same team
+			if Bogie.DakTeam and Bogie.DakTeam == 0 then continue end -- ignore spectators
 
 			local D = Eye:DistToSqr(Bogie:GetShootPos())
 			if D > SIGHT_RADSQR then continue end -- Outside of side radius
 
 			if self.ShootVehicles and Bogie.InVehicle and Bogie:InVehicle() then -- InVehicle does not exist for NextBots and must be checked for
+				--just made them shoot at closest enemy vehicle to them rathe than ignore it
+				if D < Min then
+					Min    = D
+					Target = Bogie
+					Count  = Count + 1
+				end
 				if self:CanSeeVehicle(Bogie) then
 					-- TODO: Put something here
 				end
@@ -280,7 +287,7 @@ end
 
 do -- Movement
 	function ENT:Pathfind()
-		if self.Leader == self or not(IsValid(self.Leader)) or self.Leader.Following==1 or self.Leader.pickedpath == nil then
+		if self.Leader == self or not(IsValid(self.Leader)) or self.Leader.Following==1 or self.Leader.pickedpath == nil or self.Leader.pickedpath == {} then
 			if self.Paths ~= nil then
 				--In gamemode hold a table of capture points gained by running a find once for all capture point ents then pick one that is neutral first and if no neutral then an enemy one then return vector as goal
 				if self.caps == nil then self.caps = ents.FindByClass("daktank_cap") end
