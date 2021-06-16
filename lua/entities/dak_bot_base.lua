@@ -249,6 +249,8 @@ do -- Enemies
 			if not Bogie:TestPVS(Eye) then continue end -- Not in our PVS
 			if Bogie.DakTeam and Bogie.DakTeam == Team then continue end -- On the same team
 			if Bogie.DakTeam and Bogie.DakTeam == 0 then continue end -- ignore spectators
+			if Bogie.DakTeam and Bogie.DakTeam == 3 then continue end -- ignore spectators
+			if Bogie:IsPlayer() and Bogie:GetObserverMode() ~= 0 then continue end -- ignore spectators
 
 			local D = Eye:DistToSqr(Bogie:GetShootPos())
 			if D > SIGHT_RADSQR then continue end -- Outside of side radius
@@ -287,7 +289,7 @@ end
 
 do -- Movement
 	function ENT:Pathfind()
-		if self.Leader == self or not(IsValid(self.Leader)) or self.Leader.Following==1 or self.Leader.pickedpath == nil or self.Leader.pickedpath == {} then
+		if self.Leader == self or not(IsValid(self.Leader)) or self.Leader.Following==1 or self.Leader.pickedpath == nil or next( self.Leader.pickedpath ) == nil then
 			if self.Paths ~= nil then
 				--In gamemode hold a table of capture points gained by running a find once for all capture point ents then pick one that is neutral first and if no neutral then an enemy one then return vector as goal
 				if self.caps == nil then self.caps = ents.FindByClass("daktank_cap") end
