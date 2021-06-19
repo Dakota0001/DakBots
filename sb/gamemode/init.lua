@@ -17,6 +17,11 @@ if file.Exists( "dakpaths/"..game.GetMap()..".txt", "DATA" ) then
 	Paths = util.JSONToTable(util.Decompress(file.Read( "dakpaths/"..game.GetMap()..".txt", "DATA" )))
 end
 local BotMax
+
+do -- Global Settings
+	DTTE.RespawnTime = 5 -- Respawn time in seconds
+end
+
 do--Map Limits Start
 	Era = "WWII" -- other options are "Cold War" and "Modern"
 	StartPoints = 0
@@ -496,11 +501,11 @@ do--Player Death Start
 		}
 		ply:EmitSound( deathsounds[math.random(1,#deathsounds)], 100, 100 )
 		ply:Spectate( 6 )
-		ply:ChatPrint("Respawning in 10 seconds")
-		timer.Create("RespawnTimer_"..ply:UniqueID(),10,1,function()
+		ply:ChatPrint("Respawning in " .. DTTE.RespawnTime .. " seconds")
+
+		timer.Create("RespawnTimer_" .. ply:UniqueID(), DTTE.RespawnTime, 1, function()
 			ply:ConCommand( "dt_respawn" )
-		end )
-		
+		end)
 	end
 
 	function GM:PlayerDeathThink( ply )
