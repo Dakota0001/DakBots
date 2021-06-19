@@ -497,10 +497,10 @@ do--Player Death Start
 		ply:EmitSound( deathsounds[math.random(1,#deathsounds)], 100, 100 )
 		ply:Spectate( 6 )
 		ply:ChatPrint("Respawning in 10 seconds")
-		timer.Create("RespawnTimer_"..ply:UniqueID(),10,1,function()
+
+		timer.Create("RespawnTimer_" .. ply:UniqueID(), 10, 1, function()
 			ply:ConCommand( "dt_respawn" )
-		end )
-		
+		end)
 	end
 
 	function GM:PlayerDeathThink( ply )
