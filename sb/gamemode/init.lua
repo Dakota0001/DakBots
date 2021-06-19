@@ -111,7 +111,7 @@ do--Player Spawn Start
 		end
 
 		if ply.SpawnPoint ~= nil then
-			if #Caps>=ply.SpawnPoint and Caps[ply.SpawnPoint]:GetCapTeam() == ply:Team() then
+			if #Caps>=ply.SpawnPoint and IsValid(Caps[ply.SpawnPoint]) and Caps[ply.SpawnPoint]:GetCapTeam() == ply:Team() then
 				local randspawn = math.random(1,4)
 				local spawnpos
 				if randspawn == 1 then
@@ -145,7 +145,9 @@ do--Player Spawn Start
 
 		local TransmitTable = {}
 		for i=1, #Caps do
-			TransmitTable[#TransmitTable+1] = {Caps[i]:GetNWInt("number"),Caps[i]:GetCapTeam(),Caps[i]:GetPos()}
+			if IsValid(Caps[i]) then
+				TransmitTable[#TransmitTable+1] = {Caps[i]:GetNWInt("number"),Caps[i]:GetCapTeam(),Caps[i]:GetPos()}
+			end
 		end
 		net.Start( "DT_caps" )
 			net.WriteTable( TransmitTable )
@@ -154,11 +156,11 @@ do--Player Spawn Start
 
 	function GM:PlayerSetModel( ply )
 	   	if ply.DakTeam == 1 then
-			ply:SetModel( "models/Combine_Soldier.mdl" )
+			ply:SetModel( "models/player/combine_soldier.mdl" )
 			ply:SetSkin( 1 )
 	   	end
 	   	if ply.DakTeam == 2 then
-			ply:SetModel( "models/Combine_Super_Soldier.mdl" )
+			ply:SetModel( "models/player/combine_super_soldier.mdl" )
 	   	end
 	end
 
@@ -185,7 +187,7 @@ do--Player Spawn Start
 		if RedCount <= BlueCount then
 			ply:SetTeam( 1 )
 			ply.DakTeam = 1
-			ply:SetModel( "models/Combine_Soldier.mdl" )
+			ply:SetModel( "models/player/combine_soldier.mdl" )
 			ply:SetSkin( 1 )
 			ply:PrintMessage( HUD_PRINTTALK, "Red team picked." )
 			timer.Simple(1,function() 
@@ -195,7 +197,7 @@ do--Player Spawn Start
 		elseif RedCount > BlueCount then
 			ply:SetTeam( 2 )
 			ply.DakTeam = 2
-			ply:SetModel( "models/Combine_Super_Soldier.mdl" )
+			ply:SetModel( "models/player/combine_super_soldier.mdl" )
 			ply:PrintMessage( HUD_PRINTTALK, "Blue team picked." )
 			timer.Simple(1,function() 
 				ply:ConCommand( "dt_respawn" )
@@ -205,7 +207,9 @@ do--Player Spawn Start
 
 		local TransmitTable = {}
 		for i=1, #Caps do
-			TransmitTable[#TransmitTable+1] = {Caps[i]:GetNWInt("number"),Caps[i]:GetCapTeam(),Caps[i]:GetPos()}
+			if IsValid(Caps[i]) then
+				TransmitTable[#TransmitTable+1] = {Caps[i]:GetNWInt("number"),Caps[i]:GetCapTeam(),Caps[i]:GetPos()}
+			end
 		end
 		net.Start( "DT_caps" )
 			net.WriteTable( TransmitTable )
@@ -225,33 +229,28 @@ do--Loadout Fill Start
 		ply.PerkType = tonumber(ply:GetInfo( "DakTankLoadoutPerk" ))
 		ply.SpawnPoint = tonumber(ply:GetInfo( "DakTankLoadoutSpawn" ))
 
-
+		if SpecialType == 8 then
+			SpecialType = 12
+		end
 		if Era == "WWII" then
-			if SpecialType == 1 or SpecialType == 10 then
+			if SpecialType == 1 then
 				SpecialType = 8
 			end
-			if SpecialType == 2 or SpecialType == 11 then
+			if SpecialType == 2 then
 				SpecialType = 9
 			end
-		elseif Era == "Cold War" then
-			if SpecialType == 8 or SpecialType == 10 then
-				SpecialType = 1
-			end
-			if SpecialType == 9 or SpecialType == 11 then
-				SpecialType = 2
-			end
 		elseif Era == "Modern" then
-			if SpecialType == 1 or SpecialType == 8 then
+			if SpecialType == 1 then
 				SpecialType = 10
 			end
-			if SpecialType == 2 or SpecialType == 9 then
+			if SpecialType == 2 then
 				SpecialType = 11
 			end
 		end
 
 		local Primaries = {"dak_ak47","dak_aug","dak_g3sg1","dak_galil","dak_m4a1","dak_sg552","dak_mac10","dak_mp5","dak_p90","dak_tmp","dak_ump"}
 		local Secondaries = {"dak_deagle","dak_fiveseven","dak_g18","dak_p228","dak_usp"}
-		local Specials = {"dak_at4","dak_dragon","dak_m249","dak_teshotgun","weapon_medkit","dak_ptrs41","dak_ssg08","dak_bazooka","dak_panzerschreck","dak_rpg28","dak_javelin"}
+		local Specials = {"dak_at4","dak_dragon","dak_m249","dak_teshotgun","weapon_medkit","dak_ptrs41","dak_ssg08","dak_bazooka","dak_panzerschreck","dak_rpg28","dak_javelin","dak_repair_gun"}
 
 		ply:StripWeapons()
 		ply:StripAmmo()
@@ -309,11 +308,11 @@ do--Bot Death Start
 						att.BloodStacks = att.BloodStacks + 1
 					end
 					if Era == "WWII" then
-						PointsGained = 0.1
+						PointsGained = 0.25
 					elseif Era == "Cold War" then
-						PointsGained = 0.2
-					else
 						PointsGained = 0.5
+					else
+						PointsGained = 1.0
 					end
 					net.Start( "DT_killnotification" )
 						net.WriteInt(0, 32)
@@ -562,7 +561,7 @@ do--Player Spawn and Respawn Finalization Start
 	function dt_team1( ply )
 		ply:SetTeam( 1 )
 		ply.DakTeam = 1
-		ply:SetModel( "models/Combine_Soldier.mdl" )
+		ply:SetModel( "models/player/combine_soldier.mdl" )
 		ply:SetSkin( 1 )
 		ply:PrintMessage( HUD_PRINTTALK, "Red team picked." )
 		timer.Simple(1,function() 
@@ -574,7 +573,7 @@ do--Player Spawn and Respawn Finalization Start
 	function dt_team2( ply )
 		ply:SetTeam( 2 )
 		ply.DakTeam = 2
-		ply:SetModel( "models/Combine_Super_Soldier.mdl" )
+		ply:SetModel( "models/player/combine_super_soldier.mdl" )
 		ply:PrintMessage( HUD_PRINTTALK, "Blue team picked." )
 		timer.Simple(1,function() 
 			ply:ConCommand( "dt_respawn" )
@@ -769,9 +768,11 @@ do--Conquest point ticker Start
 			LastThink = CurTime()
 			local BlueCount = 0
 			local RedCount = 0
-			for i=1, #Caps do 
-				if Caps[i]:GetCapTeam() == 1 then RedCount = RedCount + 1 end
-				if Caps[i]:GetCapTeam() == 2 then BlueCount = BlueCount + 1 end
+			for i=1, #Caps do
+				if IsValid(Caps[i]) then
+					if Caps[i]:GetCapTeam() == 1 then RedCount = RedCount + 1 end
+					if Caps[i]:GetCapTeam() == 2 then BlueCount = BlueCount + 1 end
+				end
 			end
 			if RedCount > BlueCount then
 				SetGlobalFloat("DakTankBlueResources", GetGlobalFloat("DakTankBlueResources") - (RedCount-BlueCount))
@@ -856,7 +857,9 @@ do--Conquest point ticker Start
 			if LastBlueCount ~= BlueCount or LastRedCount ~= RedCount then
 				local TransmitTable = {}
 				for i=1, #Caps do
-					TransmitTable[#TransmitTable+1] = {Caps[i]:GetNWInt("number"),Caps[i]:GetCapTeam(),Caps[i]:GetPos()}
+					if IsValid(Caps[i]) then
+						TransmitTable[#TransmitTable+1] = {Caps[i]:GetNWInt("number"),Caps[i]:GetCapTeam(),Caps[i]:GetPos()}
+					end
 				end
 				net.Start( "DT_caps" )
 					net.WriteTable( TransmitTable )
@@ -874,8 +877,10 @@ do--Conquest point ticker Start
 					local BlueCount = 0
 					local RedCount = 0
 					for i=1, #Caps do 
-						if Caps[i]:GetCapTeam() == 1 then RedCount = RedCount + 1 end
-						if Caps[i]:GetCapTeam() == 2 then BlueCount = BlueCount + 1 end
+						if IsValid(Caps[i]) then
+							if Caps[i]:GetCapTeam() == 1 then RedCount = RedCount + 1 end
+							if Caps[i]:GetCapTeam() == 2 then BlueCount = BlueCount + 1 end
+						end
 					end
 					if RedCount <= 0 and BlueCount > 0 then
 						RedOvertime = RedOvertime + 1
@@ -920,8 +925,10 @@ do--Conquest point ticker Start
 					local BlueCount = 0
 					local RedCount = 0
 					for i=1, #Caps do 
-						if Caps[i]:GetCapTeam() == 1 then RedCount = RedCount + 1 end
-						if Caps[i]:GetCapTeam() == 2 then BlueCount = BlueCount + 1 end
+						if IsValid(Caps[i]) then
+							if Caps[i]:GetCapTeam() == 1 then RedCount = RedCount + 1 end
+							if Caps[i]:GetCapTeam() == 2 then BlueCount = BlueCount + 1 end
+						end
 					end
 					if BlueCount <= 0 and RedCount > 0 then
 						BlueOvertime = BlueOvertime + 1
@@ -988,11 +995,13 @@ do--Conquest point ticker Start
 					local redcaps = {}
 					local bluecaps = {}
 					for i=1, #Caps do
-						if Caps[i]:GetCapTeam() == 1 then
-							redcaps[#redcaps+1] = Caps[i]
-						end
-						if Caps[i]:GetCapTeam() == 2 then
-							bluecaps[#bluecaps+1] = Caps[i]
+						if IsValid(Caps[i]) then
+							if Caps[i]:GetCapTeam() == 1 then
+								redcaps[#redcaps+1] = Caps[i]
+							end
+							if Caps[i]:GetCapTeam() == 2 then
+								bluecaps[#bluecaps+1] = Caps[i]
+							end
 						end
 					end
 					if RedBotCount < BotMax then

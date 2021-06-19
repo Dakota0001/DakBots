@@ -22,7 +22,7 @@ function ENT:Think()
 	local NearbyReds = 0
 	local NearbyBlues = 0
 	for k, ply in pairs( player.GetAll() ) do 
-		if ply:Alive() and ply:GetObserverMode()==0 and ply.TeamPicked==true and ply:InVehicle()==false then
+		if ply:Alive() and ply:GetObserverMode()==0 and ply.TeamPicked==true and ply:InVehicle()==false and not(ply:IsFlagSet(FL_FROZEN)) then
 			if ply:GetPos():Distance(self:GetPos()) <= 500 then
 				if ply:Team() == 1 then NearbyReds = NearbyReds + 1 end
 				if ply:Team() == 2 then NearbyBlues = NearbyBlues + 1 end
@@ -33,6 +33,21 @@ function ENT:Think()
 		if bot:GetPos():Distance(self:GetPos()) <= 500 then
 			if bot.DakTeam == 1 then NearbyReds = NearbyReds + 1 end
 			if bot.DakTeam == 2 then NearbyBlues = NearbyBlues + 1 end
+		end
+	end
+	for k, tank in pairs( ents.FindByClass("dak_tankcore") ) do 
+		if tank:GetPos():Distance(self:GetPos()) <= 500 then
+			if tank.DakOwner and tank.DakOwner:Team() == self.DakTeam then
+				local filled = 0
+				for I=1, #tank.Ammoboxes do
+					if filled == 0 then
+						if tank.Ammoboxes[I].DakAmmo < tank.Ammoboxes[I].DakMaxAmmo then
+							tank.Ammoboxes[I].DakAmmo = math.Min(tank.Ammoboxes[I].DakAmmo + math.ceil(tank.Ammoboxes[I].DakMaxAmmo*0.1),tank.Ammoboxes[I].DakMaxAmmo)
+							filled = 1
+						end
+					end
+				end
+			end
 		end
 	end
 

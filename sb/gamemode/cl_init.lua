@@ -934,6 +934,7 @@ do--Respawning Start
 			SpecialMenu:AddChoice( "M249 SAW" )
 			SpecialMenu:AddChoice( "Semiauto Shotgun" )
 			SpecialMenu:AddChoice( "Medkit" )
+			SpecialMenu:AddChoice( "Repair Tool" )
 			SpecialMenu:AddChoice( "PTRS-41" )
 			SpecialMenu:AddChoice( "Steyr SSG 08" )
 			if Era == "WWII" then
@@ -947,7 +948,7 @@ do--Respawning Start
 			
 
 			--Default to PTRS, which is "6"
-			if tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 0 or tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) > 7 then
+			if tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 0 or tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) > 8 then
 				ply.DakTankLoadout.SpecialCost = 4
 				RunConsoleCommand( "DakTankLoadoutSpecial", "6" )
 			else
@@ -985,6 +986,10 @@ do--Respawning Start
 					self.Label4desc:SetText("Heal yourself and allied players, 1 Cost")
 					ply.DakTankLoadout.SpecialCost = 1
 					RunConsoleCommand( "DakTankLoadoutSpecial", "5" )
+				elseif value == "Repair Tool" then
+					self.Label4desc:SetText("Repair vehicles and emplacements, 3 Cost")
+					ply.DakTankLoadout.SpecialCost = 3
+					RunConsoleCommand( "DakTankLoadoutSpecial", "8" )
 				elseif value == "Bazooka" then
 					self.Label4desc:SetText("1 Damage (vehicular), 30 RPM, 102 Pen, 6 Cost")
 					ply.DakTankLoadout.SpecialCost = 6
@@ -1026,16 +1031,16 @@ do--Respawning Start
 			elseif tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 6 then
 				SpecialMenu.Label4desc:SetText("2 Damage (vehicular), 60 RPM, 39.17 Pen, 4 Cost")
 				ply.DakTankLoadout.SpecialCost = 4
-			elseif tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 8 and Era == "WWII" then
+			elseif tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 1 and Era == "WWII" then
 				SpecialMenu.Label4desc:SetText("1 Damage (vehicular), 30 RPM, 102 Pen, 6 Cost")
 				ply.DakTankLoadout.SpecialCost = 6
-			elseif tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 9 and Era == "WWII" then
+			elseif tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 2 and Era == "WWII" then
 				SpecialMenu.Label4desc:SetText("5 Damage (vehicular), 30 RPM, 230 Pen, 8 Cost")
 				ply.DakTankLoadout.SpecialCost = 8
-			elseif tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 10 and Era == "Modern" then
+			elseif tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 1 and Era == "Modern" then
 				SpecialMenu.Label4desc:SetText("74 Damage (vehicular), 30 RPM, 900 Pen, 8 Cost")
 				ply.DakTankLoadout.SpecialCost = 8
-			elseif tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 11 and Era == "Modern" then
+			elseif tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 2 and Era == "Modern" then
 				SpecialMenu.Label4desc:SetText("13 Damage (vehicular), 30 RPM, 750 Pen, 7 Cost")
 				ply.DakTankLoadout.SpecialCost = 7
 			elseif tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 7 then
@@ -1044,6 +1049,9 @@ do--Respawning Start
 			elseif tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 5 then
 				SpecialMenu.Label4desc:SetText("Heal yourself and allied players, 1 Cost")
 				ply.DakTankLoadout.SpecialCost = 1
+			elseif tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) == 8 then
+				SpecialMenu.Label4desc:SetText("Repair vehicles and emplacements, 3 Cost")
+				ply.DakTankLoadout.SpecialCost = 3
 			end
 
 			--ARMOR--
