@@ -3,6 +3,33 @@ AddCSLuaFile()
 ENT.Base 	  = "base_nextbot"
 ENT.Spawnable = true
 
+function DTTE.KillBots()
+	for _, v in ipairs(ents.FindByClass("dak_gamemode_bot")) do
+		v:Remove()
+	end
+end
+
+function DTTE.CreateBot(Pos, Team)
+	local bot = ents.Create("dak_gamemode_bot")
+
+	bot:SetPos(Pos)
+	bot:SetAngles(Angle())
+
+	if Team == 1 then
+		bot:SetModel("models/Combine_Soldier.mdl")
+		bot:SetSkin(1)
+	elseif Team == 2 then
+		bot:SetModel("models/Combine_Super_Soldier.mdl")
+	end
+
+	bot:Spawn()
+
+	bot.DakTeam = Team
+	bot.Paths   = DTTE.Paths
+	bot.Era     = DTTE.Era
+	bot.Filter  = {bot}
+end
+
 do -- Sounds
 	local Alert = {
 		"npc/metropolice/vo/allunitsmovein.wav",
@@ -193,6 +220,9 @@ do -- Enemies
 		--"ValveBiped.Bip01_R_Foot",
 	}
 	function ENT:CanSee(Ent)
+		TraceData.start  = self:GetShootPos()
+		TraceData.filter = self.Filter
+
 		for _, Name in pairs(Bones) do
 			local Bone = Ent:LookupBone(Name)
 
@@ -202,12 +232,12 @@ do -- Enemies
 				local R = util.TraceLine(TraceData)
 
 				if R.Entity == Ent or not R.Hit then
-					debugoverlay.Line(self:GetShootPos(), R.HitPos, 1, Color(0, 255, 0), true)
+					debugoverlay.Line(self:GetShootPos(), R.HitPos, 1, Color(0, 255, 255), true)
 
 					return true, R.HitPos
 				end
 
-				debugoverlay.Line(self:GetShootPos(), R.HitPos, 1, Color(255, 0, 0), true)
+				--debugoverlay.Line(self:GetShootPos(), R.HitPos, 1, Color(255, 0, 0), true)
 			end
 		end
 
@@ -217,15 +247,15 @@ do -- Enemies
 		local R = util.TraceLine(TraceData)
 
 		if R.Entity == Ent or not R.Hit then
-			debugoverlay.Line(self:GetShootPos(), R.HitPos, 1, Color(0, 255, 0), true)
+			debugoverlay.Line(self:GetShootPos(), R.HitPos, 1, Color(0, 255, 255), true)
 			return true, R.HitPos
 		end
 
 		return false
 	end
 
-	function ENT:CanSeeVehicle(Ent) -- TODO: Put something here
-		return false
+	function ENT:CanSeeVehicle(Ent) -- TODO: Targets vehicles through walls until something gets added here
+		return true
 	end
 
 	function ENT:GetShootPos() -- Nextbots don't count as NPCs apparently so we need to define this method ourselves
@@ -240,9 +270,6 @@ do -- Enemies
 
 		local Min, Count, Target = math.huge, 0
 
-		TraceData.start  = Eye
-		TraceData.filter = {self}
-
 		for Bogie in pairs(Bogies) do
 			if Bogie:Health() <= 0 then continue end -- Not alive
 			if Bogie:IsFlagSet(FL_FROZEN) then continue end -- Not sure why we're checking if they're frozen but ok
@@ -256,14 +283,10 @@ do -- Enemies
 			if D > SIGHT_RADSQR then continue end -- Outside of side radius
 
 			if self.ShootVehicles and Bogie.InVehicle and Bogie:InVehicle() then -- InVehicle does not exist for NextBots and must be checked for
-				--just made them shoot at closest enemy vehicle to them rathe than ignore it
-				if D < Min then
+				if D < Min and self:CanSeeVehicle(Bogie) then
 					Min    = D
 					Target = Bogie
 					Count  = Count + 1
-				end
-				if self:CanSeeVehicle(Bogie) then
-					-- TODO: Put something here
 				end
 			elseif D < Min and self:CanSee(Bogie) then
 				Min    = D
@@ -273,13 +296,19 @@ do -- Enemies
 		end
 
 		if Target then
-			if not self:GetEnemy() then -- Alert!
-				self:PlayFindSound()
-			end
+			timer.Simple(math.random(0.2, 0.8), function()
+				if not IsValid(self) then return end
+				if not IsValid(Target) then return end
+				if Target:Health() <= 0 then return end
+				if not self:CanSee(Target) then return end
 
-			self.EnemyCount = Count -- TODO: Upgrade this behavior... Currently this causes a grenade to be thrown if multiple targets are spotted, regardless of clustering/distance from one another
-			--self.TargetAge  = CurTime() -- This doesn't seem to be used for anything
-			self:SetEnemy(Target)
+				debugoverlay.Line(self:GetShootPos(), Target:GetShootPos(), 3, Color(255, 0, 255), true)
+				self:PlayFindSound()
+
+				self.EnemyCount = Count -- TODO: Upgrade this behavior... Currently this causes a grenade to be thrown if multiple targets are spotted, regardless of clustering/distance from one another
+				self:SetEnemy(Target)
+			end)
+
 			return true
 		else
 			return false
@@ -1170,6 +1199,7 @@ do -- Think
 	function ENT:Think()
 		if IsValid(self) then
 			if self:GetEnemy() then
+				debugoverlay.Line(self:GetShootPos(), self.Enemy:GetShootPos() + VectorRand(), 0.03, Color(255, 0, 0), true)
 				self:Aim(self.Enemy:EyePos())
 			end
 			if SERVER then
@@ -1180,15 +1210,14 @@ do -- Think
 						else
 							--self:PlayHurtSound()
 						end
-						if IsValid(self.Enemy) then
-							if self.Enemy:Health()<=0 then
+						if self.Enemy then
+							if not IsValid(self.Enemy) or self.Enemy:Health()<=0 or not self:CanSee(self.Enemy) then
 								self.LastEnemyDiedTime = CurTime()
 								timer.Simple(self.FindDelay,function()
 									if IsValid(self) then
+										self.Enemy = false
 										self.LastLostEnemy = CurTime()
-										if self:GetEnemy() then
-											self:FindEnemy(self:GetEnemy():GetPos())
-										end
+										self:FindEnemy()
 									end
 								end)
 							end
@@ -1401,7 +1430,7 @@ do -- Think
 												timer.Simple(self.FindDelay,function()
 													if IsValid(self) then
 														if self:GetEnemy() then
-															self:FindEnemy(self:GetEnemy():GetPos())
+															self:FindEnemy()
 														end
 													end
 												end)
@@ -1601,7 +1630,7 @@ do -- Think
 							if self.Stationary == false then
 								if self.pickedpath==nil then self.pickedpath = {} end
 								if self.pickedcap == nil then self:Pathfind() end
-								if #self.pickedpath == 0 then
+								if self.pickedcap and #self.pickedpath == 0 then
 									--check if goal capture point is captured by their team first then pathfind to next area if so
 									if self.DakTeam == self.pickedcap.DakTeam or (self.pickedcap:GetPos()*Vector(1,1,0)):Distance(self:GetPos()*Vector(1,1,0))>300 then
 										self:Pathfind()
