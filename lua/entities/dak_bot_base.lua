@@ -3,6 +3,12 @@ AddCSLuaFile()
 ENT.Base 	  = "base_nextbot"
 ENT.Spawnable = true
 
+
+DTTE.Bots = {
+	Red = {},
+	Blue = {}
+}
+
 function DTTE.KillBots()
 	for _, v in ipairs(ents.FindByClass("dak_gamemode_bot")) do
 		v:Remove()
@@ -10,6 +16,8 @@ function DTTE.KillBots()
 end
 
 function DTTE.CreateBot(Pos, Team)
+	Team = Team or (table.Count(DTTE.Bots.Blue) >= table.Count(DTTE.Bots.Red) and 1 or 2)
+
 	local bot = ents.Create("dak_gamemode_bot")
 
 	bot:SetPos(Pos)
@@ -18,8 +26,12 @@ function DTTE.CreateBot(Pos, Team)
 	if Team == 1 then
 		bot:SetModel("models/Combine_Soldier.mdl")
 		bot:SetSkin(1)
+
+		DTTE.Bots.Red[bot] = true
 	elseif Team == 2 then
 		bot:SetModel("models/Combine_Super_Soldier.mdl")
+
+		DTTE.Bots.Blue[bot] = true
 	end
 
 	bot:Spawn()
@@ -264,6 +276,7 @@ do -- Enemies
 
 	local SIGHT_RADIUS = 5000
 	local SIGHT_RADSQR = SIGHT_RADIUS^2
+
 	function ENT:FindEnemy()
 		local Eye  = self:GetShootPos()
 		local Team = self.DakTeam
@@ -1680,4 +1693,8 @@ function ENT:GiveWeapon(wep)
 	Gun:Fire("setparentattachment", "anim_attachment_RH")
 	Gun:AddEffects(EF_BONEMERGE)
 	self.Weapon = Gun
+end
+
+function ENT:OnRemove()
+	DTTE.Bots[self.DakTeam == 1 and "Red" or "Blue"][self] = nil
 end
