@@ -3,13 +3,6 @@ AddCSLuaFile()
 ENT.Base 			= "dak_bot_base"
 ENT.Spawnable		= true
 
-if not(GLOBALreddaktroopers) then
-	GLOBALreddaktroopers = {}
-end
-if not(GLOBALbluedaktroopers) then
-	GLOBALbluedaktroopers = {}
-end
-
 function ENT:Initialize()
 	if SERVER then
 		------------------------------------------
@@ -49,10 +42,10 @@ function ENT:Initialize()
 		self.BurstMax = 3 --maximum amount of bullets bot can fire in a burst (note, the bot still can do full auto, but that is another tactic)
 		self.shootrange = 2500 --effective range for bot, they'll still fire at targets very far off, but with extremely bad accuracy
 		self.NadeCooldown = 10 --minimum time between grenade throws
-		self.CrouchingHitChance = 50 --80% chance to hit when bot is stationary and crouched
-		self.StandingHitChance = 30 --60% chance to hit when bot is standing still and firing
-		self.RunningBurstHitChance = 15 --40% chance to hit when bot is moving around and firing in controlled bursts
-		self.RunningFullAutoHitChance = 5 --20% chance to hit when bot is moving and firing in full auto
+		self.CrouchingHitChance = 50 --50% chance to hit when bot is stationary and crouched
+		self.StandingHitChance = 30 --30% chance to hit when bot is standing still and firing
+		self.RunningBurstHitChance = 15 --15% chance to hit when bot is moving around and firing in controlled bursts
+		self.RunningFullAutoHitChance = 5 --5% chance to hit when bot is moving and firing in full auto
 		self.DakTrail = "dakteballistictracer"
 		self.DakCaliber = 7.62
 		self.DakShellType = "AP"
@@ -63,12 +56,12 @@ function ENT:Initialize()
 		self.ShootVehicles = false
 
 		--secondary bot example, it will not spawn in unless BotType is set to 2, for example by using the bot type setting variable above
-		if self.BotType == 10 or self.BotType == 9 or self.BotType == 8 then --AT
+		if self.BotType == 10 or self.BotType == 9 then --AT
 			self.HealthMult = 1
 			self.ShotCount = 1
 			self.GunModel = "models/weapons/w_rocket_launcher.mdl"
 			self.FireSound = "daktanks/extra/76mmUSA2.mp3"
-			self.BaseSpread = 0.25
+			self.BaseSpread = 1
 			
 			self.PrimaryCooldown = 5
 			self.BurstMin = 1
@@ -112,10 +105,10 @@ function ENT:Initialize()
 				self.IsTandem = false
 			end
 
-			self.CrouchingHitChance = 100
-			self.StandingHitChance = 100
-			self.RunningBurstHitChance = 100
-			self.RunningFullAutoHitChance = 100
+			self.CrouchingHitChance = 10
+			self.StandingHitChance = 5
+			self.RunningBurstHitChance = 1
+			self.RunningFullAutoHitChance = 1
 		end
 		--[[
 		if self.BotType == 7 then --Shotgun
@@ -309,26 +302,6 @@ function ENT:Initialize()
  		self:Pathfind()
  		self.ShotsSinceReload = 0
 
- 		if self.DakTeam == nil then
- 			if #GLOBALreddaktroopers >= #GLOBALbluedaktroopers then
- 				self.DakTeam = 2
- 			else
- 				self.DakTeam = 1
- 			end
-			--self.DakTeam = math.random(1,2)
-			if self.DakTeam == 1 then
-	 			GLOBALreddaktroopers[#GLOBALreddaktroopers+1] = self
-	 			self:SetModel( "models/Combine_Soldier.mdl" )
-	 			--self:SetColor(Color(255,0,0,255))
-	 			self:SetSkin( 1 )
-	 		end
-	 		if self.DakTeam == 2 then
-	 			GLOBALbluedaktroopers[#GLOBALbluedaktroopers+1] = self
-	 			self:SetModel( "models/Combine_Super_Soldier.mdl" )
-	 			--self:SetColor(Color(0,0,255,255))
-	 			--self:SetSkin( 0 )
-	 		end
-		end
  		--[[
 		local enemy = ents.FindByClass( "npc_*" ) --Find any spawned entity in map with class beginning at npc
 		if IsValid(self.NPCTarget1) then
