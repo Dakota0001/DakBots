@@ -1376,7 +1376,7 @@ do -- Think
 											self:ThrowNade()
 										end
 									end
-									if math.random(1,4) == 1 or self.ShootVehicles == true then
+									if math.random(1,4) == 1 then
 										self:PlaySequenceAndWait( "Combat_stand_to_crouch" )
 										self:SetSequence( "crouch_aim_ar2" )
 										self.Spread = self.BaseSpread*0.5
@@ -1389,7 +1389,9 @@ do -- Think
 													else
 														self:FirePrimary()
 													end
-													coroutine.wait( self.PrimaryCooldown )
+													if self.ShootVehicles ~= true then
+														coroutine.wait( self.PrimaryCooldown )
+													end
 												end
 											else
 												if self.Reloading == 1 then
@@ -1407,6 +1409,18 @@ do -- Think
 										coroutine.wait( 0.1 )
 										self:PlaySequenceAndWait( "Crouch_to_combat_stand" )
 										self.LastBurstTime = CurTime()
+										if self.ShotsSinceReload >= self.MagSize then
+											self.Reloading = 1
+											self.ReloadStart = CurTime()
+											self:AddGesture( ACT_GESTURE_RELOAD )
+											self:PlayReloadSound()
+											self.Reloading = 0
+											timer.Simple(self.ReloadTime,function() 
+												if IsValid(self) then
+													self.ShotsSinceReload = 0
+												end
+											end)
+										end
 									else
 										self:SetSequence(self.CombatIdleAnimation)
 										self.Spread = self.BaseSpread*1
@@ -1414,13 +1428,15 @@ do -- Think
 										for i=1, math.random(self.BurstMin,self.BurstMax) do
 											if self:GetEnemy() then
 												if self.ShotsSinceReload<self.MagSize then
-													if self.DakTank then
-														self:FireShell()
-													else
-														self:FirePrimary()
+													if self.ShootVehicles ~= true then
+														if self.DakTank then
+															self:FireShell()
+														else
+															self:FirePrimary()
+														end
+														coroutine.wait( self.PrimaryCooldown )
+														self.LastBurstTime = CurTime()
 													end
-													coroutine.wait( self.PrimaryCooldown )
-													self.LastBurstTime = CurTime()
 												else
 													if self.Reloading == 1 then
 														self:AddGesture( ACT_GESTURE_RELOAD )
@@ -1477,36 +1493,52 @@ do -- Think
 									end
 								end
 								if self.ShootVehicles == true then
-									self:PlaySequenceAndWait( "Combat_stand_to_crouch" )
-									self:SetSequence( "crouch_aim_ar2" )
-									self.Spread = self.BaseSpread*1
-									self.HitChance = self.CrouchingHitChance
-									for i=1, math.random(math.max(self.MagSize*0.5,1),self.MagSize) do
-										if self.ShotsSinceReload<self.MagSize then
-											if self:GetEnemy() then
-												if self.DakTank then
-													self:FireShell()
-												else
-													self:FirePrimary()
-												end
-												coroutine.wait( self.PrimaryCooldown )
-											end
-										else
-											if self.Reloading == 1 then
-												self:AddGesture( ACT_GESTURE_RELOAD )
-												self:PlayReloadSound()
-												self.Reloading = 0
-												timer.Simple(self.ReloadTime,function() 
-													if IsValid(self) then
-														self.ShotsSinceReload = 0
+									if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() and self.LastRunBurstTime+1<CurTime() then
+										self:PlaySequenceAndWait( "Combat_stand_to_crouch" )
+										self:SetSequence( "crouch_aim_ar2" )
+										self.Spread = self.BaseSpread*1
+										self.HitChance = self.CrouchingHitChance
+										for i=1, math.random(math.max(self.MagSize*0.5,1),self.MagSize) do
+											if self.ShotsSinceReload<self.MagSize then
+												if self:GetEnemy() then
+													if self.DakTank then
+														self:FireShell()
+													else
+														self:FirePrimary()
 													end
-												end)
+													if self.ShootVehicles ~= true then
+														coroutine.wait( self.PrimaryCooldown )
+													end
+												end
+											else
+												if self.Reloading == 1 then
+													self:AddGesture( ACT_GESTURE_RELOAD )
+													self:PlayReloadSound()
+													self.Reloading = 0
+													timer.Simple(self.ReloadTime,function() 
+														if IsValid(self) then
+															self.ShotsSinceReload = 0
+														end
+													end)
+												end
 											end
 										end
+										coroutine.wait( 0.1 )
+										self:PlaySequenceAndWait( "Crouch_to_combat_stand" )
+										self.LastBurstTime = CurTime()
+										if self.ShotsSinceReload >= self.MagSize then
+											self.Reloading = 1
+											self.ReloadStart = CurTime()
+											self:AddGesture( ACT_GESTURE_RELOAD )
+											self:PlayReloadSound()
+											self.Reloading = 0
+											timer.Simple(self.ReloadTime,function() 
+												if IsValid(self) then
+													self.ShotsSinceReload = 0
+												end
+											end)
+										end
 									end
-									coroutine.wait( 0.1 )
-									self:PlaySequenceAndWait( "Crouch_to_combat_stand" )
-									self.LastBurstTime = CurTime()
 								else
 									if self.Tactic == 0 then
 										if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() and self.LastRunBurstTime+1<CurTime() then
@@ -1590,36 +1622,52 @@ do -- Think
 								end
 							end
 							if self.ShootVehicles == true then
-								self:PlaySequenceAndWait( "Combat_stand_to_crouch" )
-								self:SetSequence( "crouch_aim_ar2" )
-								self.Spread = self.BaseSpread*2
-								self.HitChance = self.CrouchingHitChance
-								for i=1, math.random(math.max(self.MagSize*0.5,1),self.MagSize) do
-									if self.ShotsSinceReload<self.MagSize then
-										if self:GetEnemy() then
-											if self.DakTank then
-												self:FireShell()
-											else
-												self:FirePrimary()
-											end
-											coroutine.wait( self.PrimaryCooldown )
-										end
-									else
-										if self.Reloading == 1 then
-											self:AddGesture( ACT_GESTURE_RELOAD )
-											self:PlayReloadSound()
-											self.Reloading = 0
-											timer.Simple(self.ReloadTime,function() 
-												if IsValid(self) then
-													self.ShotsSinceReload = 0
+								if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() and self.LastRunBurstTime+1<CurTime() and self.LastBurstTime+1<CurTime() then
+									self:PlaySequenceAndWait( "Combat_stand_to_crouch" )
+									self:SetSequence( "crouch_aim_ar2" )
+									self.Spread = self.BaseSpread*2
+									self.HitChance = self.CrouchingHitChance
+									for i=1, math.random(math.max(self.MagSize*0.5,1),self.MagSize) do
+										if self.ShotsSinceReload<self.MagSize then
+											if self:GetEnemy() then
+												if self.DakTank then
+													self:FireShell()
+												else
+													self:FirePrimary()
 												end
-											end)
+												if self.ShootVehicles ~= true then
+													coroutine.wait( self.PrimaryCooldown )
+												end
+											end
+										else
+											if self.Reloading == 1 then
+												self:AddGesture( ACT_GESTURE_RELOAD )
+												self:PlayReloadSound()
+												self.Reloading = 0
+												timer.Simple(self.ReloadTime,function() 
+													if IsValid(self) then
+														self.ShotsSinceReload = 0
+													end
+												end)
+											end
 										end
 									end
+									coroutine.wait( 0.1 )
+									self:PlaySequenceAndWait( "Crouch_to_combat_stand" )
+									self.LastBurstTime = CurTime()
+									if self.ShotsSinceReload >= self.MagSize then
+										self.Reloading = 1
+										self.ReloadStart = CurTime()
+										self:AddGesture( ACT_GESTURE_RELOAD )
+										self:PlayReloadSound()
+										self.Reloading = 0
+										timer.Simple(self.ReloadTime,function() 
+											if IsValid(self) then
+												self.ShotsSinceReload = 0
+											end
+										end)
+									end
 								end
-								coroutine.wait( 0.1 )
-								self:PlaySequenceAndWait( "Crouch_to_combat_stand" )
-								self.LastBurstTime = CurTime()
 							else
 								if self.Tactic == 0 then
 									if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() and self.LastRunBurstTime+1<CurTime() and self.LastBurstTime+1<CurTime() then
