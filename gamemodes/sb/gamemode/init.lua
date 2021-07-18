@@ -17,6 +17,12 @@ if file.Exists( "dakpaths/"..game.GetMap()..".txt", "DATA" ) then
 	Paths = util.JSONToTable(util.Decompress(file.Read( "dakpaths/"..game.GetMap()..".txt", "DATA" )))
 end
 local BotMax
+
+do -- Global Settings
+	DTTE.RespawnTime = 5 -- Respawn time in seconds
+end
+
+
 do--Map Limits Start
 	Era = "WWII" -- other options are "Cold War" and "Modern"
 	StartPoints = 0
@@ -64,6 +70,9 @@ do--Map Limits Start
 	--figure out what is up with gm_emp_coast bots stuck in the cave point and other places
 	--deal with issue of ai getting underwater and in bad places on gm_emp_mesa too often, also the central point on mesa can't be gotten to by AI which breaks their pathfinding if they try
 end--Map Limits End
+
+DTTE.Paths = Paths
+DTTE.Era   = Era
 
 do--Player Spawn Start
 	function GM:PlayerSpawn( ply )
@@ -496,11 +505,11 @@ do--Player Death Start
 		}
 		ply:EmitSound( deathsounds[math.random(1,#deathsounds)], 100, 100 )
 		ply:Spectate( 6 )
-		ply:ChatPrint("Respawning in 10 seconds")
-		timer.Create("RespawnTimer_"..ply:UniqueID(),10,1,function()
+		ply:ChatPrint("Respawning in " .. DTTE.RespawnTime .. " seconds")
+
+		timer.Create("RespawnTimer_" .. ply:UniqueID(), DTTE.RespawnTime, 1, function()
 			ply:ConCommand( "dt_respawn" )
-		end )
-		
+		end)
 	end
 
 	function GM:PlayerDeathThink( ply )
@@ -1024,15 +1033,7 @@ do--Conquest point ticker Start
 								maxs = Vector(50,50,10),
 							} )
 							if spawntrace.Entity:IsWorld() == true then
-								local bot = ents.Create("dak_gamemode_bot")
-								bot:SetPos(spawntrace.HitPos+Vector(0,0,25))
-								bot:SetAngles(Angle(0, 0, 0))
-								bot.DakTeam = 1
-								bot:SetModel( "models/Combine_Soldier.mdl" )
-					 			bot:SetSkin( 1 )
-					 			bot.Paths = Paths
-					 			bot.Era = Era
-								bot:Spawn()
+								DTTE.CreateBot(spawntrace.HitPos + Vector(0, 0, 25), 1)
 								RedBotCount = RedBotCount + 1
 							end
 						end
@@ -1057,14 +1058,7 @@ do--Conquest point ticker Start
 								maxs = Vector(50,50,10),
 							} )
 							if spawntrace.Entity:IsWorld() == true then
-							local bot = ents.Create("dak_gamemode_bot")
-								bot:SetPos(spawntrace.HitPos+Vector(0,0,25))
-								bot:SetAngles(Angle(0, 0, 0))
-								bot.DakTeam = 2
-								bot:SetModel( "models/Combine_Super_Soldier.mdl" )
-								bot.Paths = Paths
-								bot.Era = Era
-								bot:Spawn()
+								DTTE.CreateBot(spawntrace.HitPos + Vector(0, 0, 25), 2)
 								BlueBotCount = BlueBotCount + 1
 							end
 						end
