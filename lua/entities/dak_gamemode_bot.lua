@@ -63,7 +63,7 @@ function ENT:Initialize()
 			self.FireSound = "daktanks/extra/76mmUSA2.mp3"
 			self.BaseSpread = 1
 			
-			self.PrimaryCooldown = 5
+			self.PrimaryCooldown = 1
 			self.BurstMin = 1
 			self.BurstMax = 1
 
