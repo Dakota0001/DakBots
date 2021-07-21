@@ -173,72 +173,67 @@ do--Player Spawn Start
 	   	end
 	end
 
-	function GM:PlayerInitialSpawn( ply )
-		hook.Add( "PlayerInitialSpawn", "DTFullLoadSetup", function( ply )
-			hook.Add( "SetupMove", ply, function( self, ply, _, cmd )
-				if self == ply and not cmd:IsForced() then
-					hook.Run( "DTPlayerFullLoad", self )
+    util.AddNetworkString("DTPlayerLoaded")
+    net.Receive("DTPlayerLoaded", function(_, Player)
+        hook.Run("DTOnPlayerLoaded", Player)
+    end)
 
-					print("test")
+	hook.Add("DTOnPlayerLoaded", "DTPlayerSpawn", function( ply )
+		if ply.dakloaded ~= true then
+			ply.dakloaded = true
+			GAMEMODE:PlayerSpawnAsSpectator( ply )
+			ply:Spectate( 6 )
+			ply:SetTeam( 3 )
+			ply.DakTeam = 3
+			ply:addPoints(StartPoints)
+			ply.TeamPicked = false
+			--ply:ConCommand( "dt_start" )
 
-					--Caps = ents.FindByClass( "daktank_cap" )
-					GAMEMODE:PlayerSpawnAsSpectator( ply )
-					ply:Spectate( 6 )
-					ply:SetTeam( 3 )
-					ply.DakTeam = 3
-					ply:addPoints(StartPoints)
-					ply.TeamPicked = false
-					--ply:ConCommand( "dt_start" )
-
-					local RedCount = 0
-					local BlueCount = 0
-					local Players = player.GetAll()
-					for i=1, #Players do
-						if Players[i]:Team() == 1 then
-							RedCount = RedCount + 1
-						elseif Players[i]:Team() == 2 then
-							BlueCount = BlueCount + 1
-						end
-					end
-					if RedCount <= BlueCount then
-						ply:SetTeam( 1 )
-						ply.DakTeam = 1
-						ply:SetModel( "models/player/combine_soldier.mdl" )
-						ply:SetSkin( 1 )
-						ply:PrintMessage( HUD_PRINTTALK, "Red team picked." )
-						timer.Simple(1,function() 
-							ply:ConCommand( "dt_respawn" )
-						end)
-						ply.JustPickedTeam = true
-					elseif RedCount > BlueCount then
-						ply:SetTeam( 2 )
-						ply.DakTeam = 2
-						ply:SetModel( "models/player/combine_super_soldier.mdl" )
-						ply:PrintMessage( HUD_PRINTTALK, "Blue team picked." )
-						timer.Simple(1,function() 
-							ply:ConCommand( "dt_respawn" )
-						end)
-						ply.JustPickedTeam = true
-					end
-
-					local TransmitTable = {}
-					for i=1, #Caps do
-						if IsValid(Caps[i]) then
-							TransmitTable[#TransmitTable+1] = {Caps[i]:GetNWInt("number"),Caps[i]:GetCapTeam(),Caps[i]:GetPos()}
-						end
-					end
-					net.Start( "DT_caps" )
-						net.WriteTable( TransmitTable )
-					net.Send( ply )
-					net.Start( "DT_era" )
-						net.WriteString( Era )
-					net.Send( ply )
-
-					hook.Remove( "SetupMove", self )
+			local RedCount = 0
+			local BlueCount = 0
+			local Players = player.GetAll()
+			for i=1, #Players do
+				if Players[i]:Team() == 1 then
+					RedCount = RedCount + 1
+				elseif Players[i]:Team() == 2 then
+					BlueCount = BlueCount + 1
 				end
-			end )
-		end )
-	end
+			end
+			if RedCount <= BlueCount then
+				ply:SetTeam( 1 )
+				ply.DakTeam = 1
+				ply:SetModel( "models/player/combine_soldier.mdl" )
+				ply:SetSkin( 1 )
+				ply:PrintMessage( HUD_PRINTTALK, "Red team picked." )
+				timer.Simple(1,function() 
+					ply:ConCommand( "dt_respawn" )
+				end)
+				ply.JustPickedTeam = true
+			elseif RedCount > BlueCount then
+				ply:SetTeam( 2 )
+				ply.DakTeam = 2
+				ply:SetModel( "models/player/combine_super_soldier.mdl" )
+				ply:PrintMessage( HUD_PRINTTALK, "Blue team picked." )
+				timer.Simple(1,function() 
+					ply:ConCommand( "dt_respawn" )
+				end)
+				ply.JustPickedTeam = true
+			end
+
+			local TransmitTable = {}
+			for i=1, #Caps do
+				if IsValid(Caps[i]) then
+					TransmitTable[#TransmitTable+1] = {Caps[i]:GetNWInt("number"),Caps[i]:GetCapTeam(),Caps[i]:GetPos()}
+				end
+			end
+			net.Start( "DT_caps" )
+				net.WriteTable( TransmitTable )
+			net.Send( ply )
+			net.Start( "DT_era" )
+				net.WriteString( Era )
+			net.Send( ply )
+		end
+	end)
 end--Player Spawn End
 
 do--Loadout Fill Start

@@ -23,6 +23,14 @@ end
 net.Receive( "DT_bots", botrecieve)
 --]]
 
+do --Player loaded
+	hook.Add("InitPostEntity", "DTPlayerLoaded", function()
+	    net.Start("DTPlayerLoaded")
+	    net.SendToServer()
+	    hook.Remove("InitPostEntity", "DTPlayerLoaded")
+	end)
+end
+
 do--Fonts Start
 	surface.CreateFont("HUDKill", {
 		font = "Arial",
