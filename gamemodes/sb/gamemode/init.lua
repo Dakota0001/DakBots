@@ -1,8 +1,9 @@
-AddCSLuaFile( "cl_init.lua" )
-AddCSLuaFile( "shared.lua" )
-AddCSLuaFile("player.lua")
-include( 'shared.lua' )
-include( 'player.lua' )
+include("shared.lua")
+include("sh_player.lua")
+include("sv_dakmin.lua")
+
+--
+
 SetGlobalFloat("DakTankRedResources", 2500)
 SetGlobalFloat("DakTankBlueResources", 2500)
 local Reds, Blues, Specs = 1,2,3
