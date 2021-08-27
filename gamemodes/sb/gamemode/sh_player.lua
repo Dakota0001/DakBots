@@ -1,3 +1,7 @@
+AddCSLuaFile()
+
+--
+
 local self = FindMetaTable("Player")
 
 function self:addPoints(amt)
