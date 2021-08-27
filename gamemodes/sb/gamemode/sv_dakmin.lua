@@ -40,7 +40,7 @@ local commands = {
         if IsValid(target) then
             target:Kick(reason)
 
-            MsgAll(caller, "kicked", target:Nick(), reason)
+            MsgAll(caller, " kicked ", target:Nick(), " for ", reason, "\n")
         end
     end,
     ban = function(caller, name, time, reason)
@@ -48,26 +48,28 @@ local commands = {
 
         if IsValid(target) then
             dakmin.bans[target:SteamID()] = {
-                time = os.time() + (time and timeConvert(time) or math.huge),
+                time = os.time() + (time or math.huge),
                 reason = reason
             }
 
             dakmin.save()
 
-            MsgAll(caller, "banned", target:Nick(), time, reason)
+            game.KickID(target:SteamID(), reason)
+            MsgAll(caller, " banned ", target:Nick(), " for ", reason, "\n")
         end
     end,
     banid = function(caller, steamid, time, reason)
         if IsValid(caller) and not caller:IsSuperAdmin() then return end
 
         dakmin.bans[steamid] = {
-            time   = os.time() + (time and timeConvert(time) or math.huge),
+            time   = os.time() + (time or math.huge),
             reason = reason
         }
 
         dakmin.save()
 
-        MsgAll(caller, "banned", steamid, time, reason)
+        game.KickID(steamid, reason)
+        MsgAll(caller, " banned ", steamid, " for ", reason, "\n")
     end,
     unban = function(caller, steamid)
         if IsValid(caller) and not caller:IsSuperAdmin() then return end
@@ -76,7 +78,7 @@ local commands = {
             dakmin.bans[steamid] = nil
             dakmin.save()
 
-            MsgAll(caller or "server", "unbanned", steamid)
+            MsgAll(caller or "server", " unbanned ", steamid, "\n")
         end
     end,
     slay = function(caller, name)
@@ -87,10 +89,12 @@ local commands = {
         if IsValid(target) then
             target:Kill()
 
-            MsgAll(caller, "slayed", target:Nick())
+            MsgAll(caller, " slayed ", target:Nick(), "\n")
         end
     end,
     adduser = function(caller, name, rank)
+        if IsValid(caller) and not caller:IsSuperAdmin() then return end
+
         local target = findPlayer(name)
 
         rank = string.lower(rank)
@@ -100,14 +104,20 @@ local commands = {
             dakmin.save()
 
             target:SetUserGroup(rank)
+
+            MsgAll(caller or "server ", "set ", target:Nick(), " to ", rank, "\n")
         end
     end,
     removeuser = function(caller, name)
+        if IsValid(caller) and not caller:IsSuperAdmin() then return end
+
         local target = findPlayer(name)
 
         if IsValid(target) then
             dakmin.users[target:SteamID()] = nil
             dakmin.save()
+
+            MsgAll(caller or "server ", "removed user ", target:Nick())
         end
     end
 }
@@ -131,7 +141,7 @@ end)
 hook.Add("PlayerAuthed", "dakmin.ban", function(ply, steamid)
     if dakmin.bans[steamid] then
         if dakmin.bans[steamid].time > os.time() then
-            game.KickID((steamid), dakmin.bans[steamid].reason)
+            game.KickID(steamid, dakmin.bans[steamid].reason)
         else
             commands.unban(nil, steamid)
         end
