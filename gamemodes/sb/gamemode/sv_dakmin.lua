@@ -30,30 +30,6 @@ local function findPlayer(str)
     end
 end
 
-local function timeConvert(str)
-    local d = string.lower(string.Right(str))
-
-    if d == "d" then
-        string.TrimRight(str, d)
-
-        return tonumber(str) * 86400
-    elseif d == "w" then
-        string.TrimRight(str, d)
-
-        return tonumber(str) * 604800
-    elseif d == "m" then
-        string.TrimRight(str, d)
-
-        return tonumber(str) * 2628000
-    elseif d == "y" then
-        string.TrimRight(str, d)
-
-        return tonumber(str) * 31540000
-    end
-
-    return tonumber(str)
-end
-
 local commands = {
     kick = function(caller, name, reason)
         if IsValid(caller) and not caller:IsAdmin() then return end
