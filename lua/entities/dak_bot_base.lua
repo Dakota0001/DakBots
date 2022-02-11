@@ -720,22 +720,22 @@ do -- Movement
 		local yawAng=vec-self:EyePos()
 		--Then converts it to a vector on the entity and makes it an angle ("local angle")
 		local yawAng=self:WorldToLocal(self:GetPos()+yawAng):Angle()
-		
+
 		--Same thing as above but this gets the pitch angle. Since the turret's pitch axis and the turret's yaw axis are seperate I need to do this seperately.
 		local pAng=vec-self:LocalToWorld((yawAng:Forward()*8)+Vector(0,0,50))
 		local pAng=self:WorldToLocal(self:GetPos()+pAng):Angle()
 
-		--Y=Yaw. This is a number between 0-360.	
+		--Y=Yaw. This is a number between 0-360.
 		local y=yawAng.y
 		--P=Pitch. This is a number between 0-360.
 		local p=pAng.p
-		
+
 		--Numbers from 0 to 360 don't work with the pose parameters, so I need to make it a number from -180 to 180
 		if y>=180 then y=y-360 end
 		if p>=180 then p=p-360 end
 		if y<-60 || y>60 then return false end
 		if p<-81.2 || p>50 then return false end
-		--Returns yaw and pitch as numbers between -180 and 180	
+		--Returns yaw and pitch as numbers between -180 and 180
 		return y,p
 	end
 
@@ -954,7 +954,7 @@ do -- Attacking
 						FireAng = ((self:GetEnemy():GetPos()+self:GetEnemy():OBBCenter()+missvec)-self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos):Angle()
 					end
 				end
-				
+
 				local FriendlyTrace = {}
 					FriendlyTrace.start = self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos
 					FriendlyTrace.endpos = self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos + FireAng:Forward()*1000000
@@ -971,14 +971,14 @@ do -- Attacking
 				end
 				if self.PrimaryLastFire+self.PrimaryCooldown<CurTime() and not(self.NoFire == 1) then
 					if self:GetEnemy() then
-						local bullet = {} 
-						bullet.Num = self.ShotCount 
+						local bullet = {}
+						bullet.Num = self.ShotCount
 						bullet.Src = self:GetAttachment(self:LookupAttachment("anim_attachment_RH")).Pos
 						bullet.Dir = FireAng:Forward()
-						bullet.Spread = Vector( self.Spread*0.1, self.Spread*0.1, 0) 
+						bullet.Spread = Vector( self.Spread*0.1, self.Spread*0.1, 0)
 						bullet.Tracer = 1
-						bullet.TracerName = "Tracer" 
-						bullet.Force = self.PrimaryForce 
+						bullet.TracerName = "Tracer"
+						bullet.Force = self.PrimaryForce
 						bullet.Damage = self.PrimaryDamage/2 --divide by two since they are set to always headshot
 						self:FireBullets(bullet)
 						self.PrimaryLastFire = CurTime()
@@ -1149,12 +1149,12 @@ do -- Taking damage
 		end )
 		]]--
 		hook.Run( "OnNPCKilled", self, dmginfo:GetAttacker(), dmginfo:GetInflictor() )
-		
+
 	end
 
 	function ENT:OnTakeDamage( dmginfo )
 		self:SetHealth(self:Health()-dmginfo:GetDamage())
-	--	if self:Health() <= 0 then 
+	--	if self:Health() <= 0 then
 	--		hook.Run( "OnNPCKilled", self, dmginfo:GetAttacker(), dmginfo:GetInflictor() )
 	--		self:Remove()
 	--	end
@@ -1251,7 +1251,7 @@ do -- Think
 						else
 							self.commander = nil
 						end
-					
+
 					self.LastThink = CurTime()
 				end
 			end
@@ -1343,7 +1343,7 @@ do -- Think
 								self.loco:FaceTowards( self:GetEnemy():GetPos())
 							end
 						end
-						
+
 						local Forward = self:GetForward()
 						local Goal = (self:GetEnemy():GetPos() - self:GetPos()):GetNormalized()
 						if (self:GetEnemy():GetPos()):Distance(self:GetPos()) <= self.meleerange*0.75 then
@@ -1398,7 +1398,7 @@ do -- Think
 													self:AddGesture( ACT_GESTURE_RELOAD )
 													self:PlayReloadSound()
 													self.Reloading = 0
-													timer.Simple(self.ReloadTime,function() 
+													timer.Simple(self.ReloadTime,function()
 														if IsValid(self) then
 															self.ShotsSinceReload = 0
 														end
@@ -1415,7 +1415,7 @@ do -- Think
 											self:AddGesture( ACT_GESTURE_RELOAD )
 											self:PlayReloadSound()
 											self.Reloading = 0
-											timer.Simple(self.ReloadTime,function() 
+											timer.Simple(self.ReloadTime,function()
 												if IsValid(self) then
 													self.ShotsSinceReload = 0
 												end
@@ -1442,7 +1442,7 @@ do -- Think
 														self:AddGesture( ACT_GESTURE_RELOAD )
 														self:PlayReloadSound()
 														self.Reloading = 0
-														timer.Simple(self.ReloadTime,function() 
+														timer.Simple(self.ReloadTime,function()
 															if IsValid(self) then
 																self.ShotsSinceReload = 0
 															end
@@ -1515,7 +1515,7 @@ do -- Think
 													self:AddGesture( ACT_GESTURE_RELOAD )
 													self:PlayReloadSound()
 													self.Reloading = 0
-													timer.Simple(self.ReloadTime,function() 
+													timer.Simple(self.ReloadTime,function()
 														if IsValid(self) then
 															self.ShotsSinceReload = 0
 														end
@@ -1532,7 +1532,7 @@ do -- Think
 											self:AddGesture( ACT_GESTURE_RELOAD )
 											self:PlayReloadSound()
 											self.Reloading = 0
-											timer.Simple(self.ReloadTime,function() 
+											timer.Simple(self.ReloadTime,function()
 												if IsValid(self) then
 													self.ShotsSinceReload = 0
 												end
@@ -1561,7 +1561,7 @@ do -- Think
 														self:AddGesture( ACT_GESTURE_RELOAD )
 														self:PlayReloadSound()
 														self.Reloading = 0
-														timer.Simple(self.ReloadTime,function() 
+														timer.Simple(self.ReloadTime,function()
 															if IsValid(self) then
 																self.ShotsSinceReload = 0
 															end
@@ -1593,7 +1593,7 @@ do -- Think
 														self:AddGesture( ACT_GESTURE_RELOAD )
 														self:PlayReloadSound()
 														self.Reloading = 0
-														timer.Simple(self.ReloadTime,function() 
+														timer.Simple(self.ReloadTime,function()
 															if IsValid(self) then
 																self.ShotsSinceReload = 0
 															end
@@ -1644,7 +1644,7 @@ do -- Think
 												self:AddGesture( ACT_GESTURE_RELOAD )
 												self:PlayReloadSound()
 												self.Reloading = 0
-												timer.Simple(self.ReloadTime,function() 
+												timer.Simple(self.ReloadTime,function()
 													if IsValid(self) then
 														self.ShotsSinceReload = 0
 													end
@@ -1661,7 +1661,7 @@ do -- Think
 										self:AddGesture( ACT_GESTURE_RELOAD )
 										self:PlayReloadSound()
 										self.Reloading = 0
-										timer.Simple(self.ReloadTime,function() 
+										timer.Simple(self.ReloadTime,function()
 											if IsValid(self) then
 												self.ShotsSinceReload = 0
 											end
@@ -1690,7 +1690,7 @@ do -- Think
 													self:AddGesture( ACT_GESTURE_RELOAD )
 													self:PlayReloadSound()
 													self.Reloading = 0
-													timer.Simple(self.ReloadTime,function() 
+													timer.Simple(self.ReloadTime,function()
 														if IsValid(self) then
 															self.ShotsSinceReload = 0
 														end
@@ -1722,7 +1722,7 @@ do -- Think
 													self:AddGesture( ACT_GESTURE_RELOAD )
 													self:PlayReloadSound()
 													self.Reloading = 0
-													timer.Simple(self.ReloadTime,function() 
+													timer.Simple(self.ReloadTime,function()
 														if IsValid(self) then
 															self.ShotsSinceReload = 0
 														end
@@ -1802,7 +1802,7 @@ function ENT:GiveWeapon(wep)
 	Gun:SetPos(pos)
 	Gun:Spawn()
 	Gun.DontPickUp = true
-	Gun:SetSolid(SOLID_NONE)	
+	Gun:SetSolid(SOLID_NONE)
 	Gun:SetParent(self)
 	Gun:Fire("setparentattachment", "anim_attachment_RH")
 	Gun:AddEffects(EF_BONEMERGE)
@@ -1811,4 +1811,8 @@ end
 
 function ENT:OnRemove()
 	DTTE.Bots[self.DakTeam == 1 and "Red" or "Blue"][self] = nil
+end
+
+function ENT:InVehicle()
+	return false
 end

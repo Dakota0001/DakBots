@@ -1,3 +1,8 @@
+AddCSLuaFile()
+AddCSLuaFile("cl_init.lua")
+
+--
+
 GM.Name		= "DakTank"
 GM.Author	= "Dakota"
 DeriveGamemode( "sandbox" )

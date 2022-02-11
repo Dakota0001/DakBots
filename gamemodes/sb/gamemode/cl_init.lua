@@ -1,6 +1,8 @@
-AddCSLuaFile( "player.lua" )
-include( 'player.lua' )
-include( 'shared.lua' )
+include("sh_player.lua")
+include("shared.lua")
+
+--
+
 local ScaleX = ScrW()/1920
 local ScaleY = ScrH()/1080
 
