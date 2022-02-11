@@ -622,7 +622,9 @@ do--Respawning Start
 		} )
 
 		ply.MapCenter = (righttrace.HitPos+lefttrace.HitPos+fronttrace.HitPos+backtrace.HitPos)*0.25
-	 	ply.MapCenter.z = LocalPlayer():GetPos().z+2500--uptrace.HitPos.z-25
+	 	ply.MapCenter.z = 0--uptrace.HitPos.z-25
+
+	 	print(ply.MapCenter)
 
 	 	if RespawnSelect == nil then
 			RespawnSelect = vgui.Create( "DFrame" )
@@ -643,7 +645,7 @@ do--Respawning Start
 				local CamData = {}
 				CamData.angles = Angle(90,90,0)
 				CamData.origin = ply.MapCenter
-				CamData.aspectratio = 1
+				CamData.aspect = 1
 				CamData.x = (ScrW() / 2) - 380*ScaleX - 135*ScaleX
 				CamData.y = (ScrH() / 2) - 380*ScaleY
 
@@ -658,8 +660,11 @@ do--Respawning Start
 				CamData.orthoright = MapSize + 250
 				CamData.orthotop = -MapSize - 250
 				CamData.orthobottom = MapSize + 250
+
 				CamData.znear = -100000
 				CamData.zfar = 100000
+				CamData.znearviewmodel = -100000
+				CamData.zfarviewmodel = 100000
 
 				render.RenderView( CamData )
 			end
@@ -960,6 +965,7 @@ do--Respawning Start
 				ply.DakTankLoadout.SpecialCost = 4
 				RunConsoleCommand( "DakTankLoadoutSpecial", "6" )
 			else
+				print( Era )
 				SpecialMenu:ChooseOptionID( tonumber(ply:GetInfo( "DakTankLoadoutSpecial" )) )
 			end
 
@@ -1351,7 +1357,7 @@ do--Minimap Start
 					} )
 
 					ply.MapCenter = (righttrace.HitPos+lefttrace.HitPos+fronttrace.HitPos+backtrace.HitPos)*0.25
-				 	ply.MapCenter.z = LocalPlayer():GetPos().z+2500--uptrace.HitPos.z-25
+				 	ply.MapCenter.z = 0--uptrace.HitPos.z-25
 
 					PopupMap = vgui.Create( "DPanel")
 					PopupMap:Center()
@@ -1360,7 +1366,7 @@ do--Minimap Start
 						local CamData = {}
 						CamData.angles = Angle(90,90,0)
 						CamData.origin = ply.MapCenter
-						CamData.aspectratio = 1
+						CamData.aspect = 1
 						CamData.x = (ScrW() / 2) - 380*ScaleX - 135*ScaleX
 						CamData.y = (ScrH() / 2) - 380*ScaleY
 
@@ -1375,8 +1381,11 @@ do--Minimap Start
 						CamData.orthoright = MapSize + 250
 						CamData.orthotop = -MapSize - 250
 						CamData.orthobottom = MapSize + 250
+
 						CamData.znear = -100000
 						CamData.zfar = 100000
+						CamData.znearviewmodel = -100000
+						CamData.zfarviewmodel = 100000
 
 						render.RenderView( CamData )
 					end

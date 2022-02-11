@@ -35,38 +35,48 @@ do--Map Limits Start
 	elseif game.GetMap() == "gm_emp_cyclopean" then
 		Era = "Modern"
 		StartPoints = 150
-		BotMax = 80
-	elseif game.GetMap() == "gm_emp_coast" then --inactive
+		BotMax = 100
+	elseif game.GetMap() == "gm_emp_coast" then
 		Era = "WWII"
 		StartPoints = 30
-		BotMax = 40
+		BotMax = 75
 	elseif game.GetMap() == "gm_emp_palmbay" then
 		Era = "WWII"
 		StartPoints = 20
-		BotMax = 40
+		BotMax = 75
 	elseif game.GetMap() == "gm_emp_canyon" then
 		Era = "Cold War"
 		StartPoints = 50
-		BotMax = 40
+		BotMax = 75
 	elseif game.GetMap() == "gm_emp_bush" then
 		Era = "Cold War"
 		StartPoints = 75
 		BotMax = 100
-	elseif game.GetMap() == "gm_emp_mesa" then --inactive
+	elseif game.GetMap() == "gm_emp_mesa" then
 		Era = "Modern"
 		StartPoints = 100
-		BotMax = 40
+		BotMax = 100
 	elseif game.GetMap() == "gm_emp_chain" then
-		Era = "Cold War"
-		StartPoints = 60
+		Era = "Modern"
+		StartPoints = 120
 		BotMax = 100
 	elseif game.GetMap() == "gm_emp_manticore" then
 		Era = "WWII"
 		StartPoints = 10
 		BotMax = 75
+	elseif game.GetMap() == "gm_forest_final_2018" then
+		Era = "Cold War"
+		StartPoints = 20
+		BotMax = 75
 	end
+	
+	--active maps of each era
+	--WWII: 3
+	--Cold War: 3
+	--Modern: 3
+
 	--MapList = {"gm_bay","gm_emp_cyclopean","gm_emp_coast","gm_emp_palmbay","gm_emp_canyon","gm_emp_bush","gm_emp_mesa"}
-	MapList = {"gm_emp_manticore","gm_emp_chain","gm_emp_cyclopean","gm_emp_palmbay","gm_emp_canyon","gm_emp_bush"}
+	MapList = {"gm_emp_manticore","gm_emp_chain","gm_emp_cyclopean","gm_emp_palmbay","gm_emp_canyon","gm_emp_bush","gm_emp_mesa","gm_emp_coast","gm_forest_final_2018"}
 	--figure out what is up with gm_emp_coast bots stuck in the cave point and other places
 	--deal with issue of ai getting underwater and in bad places on gm_emp_mesa too often, also the central point on mesa can't be gotten to by AI which breaks their pathfinding if they try
 end--Map Limits End
@@ -682,7 +692,6 @@ do--Add Cap Point Start
 		AddCap("gm_emp_cyclopean", Vector(-5272.229492, 2796.873291, 2737.434570), 0)
 		AddCap("gm_emp_cyclopean", Vector(-11754.385742, 10937.160156, 4147.003906), 0)
 		--gm_emp_coast
-		AddCap("gm_emp_coast", Vector(641.94915771484, 1939.0076904297, 824.03125), 0)
 		AddCap("gm_emp_coast", Vector(-360.71417236328, 14465.139648438, 100.83126831055), 0)
 		AddCap("gm_emp_coast", Vector(-377.65539550781, -8393.970703125, 537.8193359375), 0)
 		AddCap("gm_emp_coast", Vector(11176.348632813, 4945.646484375, 498.98565673828), 0)
@@ -724,7 +733,6 @@ do--Add Cap Point Start
 		AddCap("gm_emp_bush", Vector(5303.6704101563, 9606.1435546875, -2999.4294433594), 2)
 		--gm_emp_mesa
 		AddCap("gm_emp_mesa", Vector(10849.646484375, -9665.6513671875, 512.03125), 0)
-		AddCap("gm_emp_mesa", Vector(-1935.9918212891, 548.43914794922, 1743.03125), 0)
 		AddCap("gm_emp_mesa", Vector(1497.2092285156, 13140.393554688, 160.03125), 0)
 		AddCap("gm_emp_mesa", Vector(-2498.0358886719, -13811.28515625, 160.03125), 0)
 		AddCap("gm_emp_mesa", Vector(-13969.802734375, -11518.235351563, 608.03125), 1)
@@ -757,6 +765,12 @@ do--Add Cap Point Start
 		AddCap("gm_emp_manticore", Vector(10482.78125, -198.15625, 1735.375), 0)
 		AddCap("gm_emp_manticore", Vector(-12926.375, -4013.46875, 1671.40625), 0)
 		AddCap("gm_emp_manticore", Vector(-12635.03125, 2757.21875, 1670.53125), 0)
+
+		AddCap("gm_forest_final_2018", Vector(-4162.03515625, -3336.5603027344, 155.46092224121), 1)
+		AddCap("gm_forest_final_2018", Vector(2802.8420410156, -3620.1145019531, 72.03125), 0)
+		AddCap("gm_forest_final_2018", Vector(3033.9453125, 3377.7802734375, 64.03125), 2)
+		AddCap("gm_forest_final_2018", Vector(-4268.5356445313, 2795.9501953125, 109.49108886719), 0)
+		AddCap("gm_forest_final_2018", Vector(546.07806396484, -82.39582824707, 106.70700073242), 0)
 
 		Caps = ents.FindByClass( "daktank_cap" )
 	end)

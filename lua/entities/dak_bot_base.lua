@@ -361,7 +361,7 @@ do -- Movement
 				if #CapTable > 0 then
 					for i=1, #self.Paths do
 						if #self.Paths[i] > 0 then
-							if pickedvec:Distance(self.Paths[i][#self.Paths[i]].Center) < 300 then --maybe 100 is too low, check if target paths is 0 size, try 300 size like the bots do
+							if pickedvec:Distance(self.Paths[i][#self.Paths[i]]) < 300 then --maybe 100 is too low, check if target paths is 0 size, try 300 size like the bots do
 								TargetPaths[#TargetPaths+1] = self.Paths[i]
 							end
 						end
@@ -372,8 +372,8 @@ do -- Movement
 				if #TargetPaths > 0 then
 					for i=1, #TargetPaths do
 						if #TargetPaths[i] > 0 then
-							if self:GetPos():Distance(TargetPaths[i][1].Center) < ShortestDist then
-								ShortestDist = self:GetPos():Distance(TargetPaths[i][1].Center)
+							if self:GetPos():Distance(TargetPaths[i][1]) < ShortestDist then
+								ShortestDist = self:GetPos():Distance(TargetPaths[i][1])
 								self.pickedpath = TargetPaths[i] --don't copy it yet, copy it at the end for optimization
 							end
 						end
@@ -381,14 +381,14 @@ do -- Movement
 				end
 				self.pickedpath = table.Copy(self.pickedpath)
 				--PrintTable(self.pickedpath)
-				self.Dest = self.pickedpath[1].Center
+				self.Dest = self.pickedpath[1]
 			else
 				self.Dest = self:GetPos() + Vector(math.Rand(-1000000,1000000),math.Rand(-1000000,1000000),0)
 			end
 		else
 			--self.Dest = self.Leader.Dest
 			self.pickedpath = table.Copy(self.Leader.pickedpath)
-			self.Dest = self.pickedpath[1].Center
+			self.Dest = self.pickedpath[1]
 		end
 	end
 
@@ -1769,7 +1769,7 @@ do -- Think
 									else
 										table.remove( self.pickedpath, 1 )
 										if self.pickedpath[1] ~= nil then
-											self.Dest = self.pickedpath[1].Center
+											self.Dest = self.pickedpath[1]
 										end
 										self:MoveToPos()
 									end
